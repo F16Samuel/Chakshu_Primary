@@ -1,0 +1,7 @@
+react
+react-dom
+react-router-dom
+tailwindcss
+web-vitals
+react-webcam
+lucide-react
