@@ -1,0 +1,16 @@
+ultralytics
+torch
+torchvision
+numpy
+opencv-python
+matplotlib
+PyYAML
+tqdm
+scikit-learn
+Pillow
+fastapi
+uvicorn[standard]
+python-multipart
+websockets
+python-dotenv
+pydantic
