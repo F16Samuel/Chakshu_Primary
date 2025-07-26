@@ -392,16 +392,16 @@ export default function Dashboard() {
     systemStatus.registrationApi === "healthy";
 
   return (
-    <div className="min-h-full bg-gradient-primary">
+    <div className="min-h-full bg-[#101921]">
       <TopButtons /> {/* Added the TopButtons component here */}
       <div className="container mx-auto px-4 py-8 space-y-8">
         {/* Header Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="bg-gradient-card border-primary/30 p-6">
+          <Card className="bg-[#1F2733] border-[#1F2733] p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-muted-foreground text-sm">On Site</p>
-                <p className="text-3xl font-bold text-primary">{onSiteCount}</p>
+                <p className="text-muted-foreground text-sm">On Site </p>
+                <p className="text-3xl font-bold text-white">{onSiteCount}</p>
                 <div className="text-xs text-muted-foreground mt-2">
                   <p>Students: {onSiteBreakdown.students}</p>
                   <p>Professors: {onSiteBreakdown.professors}</p>
@@ -409,11 +409,11 @@ export default function Dashboard() {
                   <p>Maintenance: {onSiteBreakdown.maintenance}</p>
                 </div>
               </div>
-              <Users className="h-8 w-8 text-primary" />
+              <Users className="h-8 w-8 text-white" />
             </div>
           </Card>
 
-          <Card className="bg-gradient-card border-primary/30 p-6">
+          <Card className="bg-[#1F2733] border-[#1F2733] p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-muted-foreground text-sm">System Status</p>
@@ -421,7 +421,7 @@ export default function Dashboard() {
                   {isOverallSystemHealthy ? "Online" : "Offline"}
                 </Badge>
               </div>
-              <Shield className="h-8 w-8 text-primary" />
+              <Shield className="h-8 w-8 text-white" />
             </div>
           </Card>
         </div>
@@ -429,13 +429,13 @@ export default function Dashboard() {
         {/* Camera Feeds (still for manual capture) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <CameraFeed
-            title="ENTRY KIOSK"
+            title="ENTRY"
             onCapture={handleEntryCapture}
             loading={isEntryKioskLoading}
           />
 
           <CameraFeed
-            title="EXIT KIOSK"
+            title="EXIT"
             onCapture={handleExitCapture}
             loading={isExitKioskLoading}
           />
@@ -447,10 +447,10 @@ export default function Dashboard() {
             <ActivityFeed activities={activities} maxItems={6} />
           </div>
 
-          <Card className="bg-gradient-card border-primary/30">
+          <Card className="bg-[#1F2733] border-[#1F2733]/30">
             <div className="p-6">
               <h3 className="font-semibold text-lg mb-4 flex items-center space-x-2">
-                <AlertTriangle className="h-5 w-5 text-primary" />
+                <AlertTriangle className="h-5 w-5 text-[#36D399]" />
                 <span>System Health Check</span>
               </h3>
 
@@ -484,10 +484,10 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="mt-6 p-4 bg-primary/10 rounded-lg border border-primary/30">
-                <p className="text-sm text-primary font-medium flex items-center">
+              <div className="mt-6 p-4 bg-[#1F2733]/10 rounded-lg border border-[#101921]">
+                <p className="text-sm text-white font-medium flex items-center">
                   {isOverallSystemHealthy
-                    ? (<><CheckCircle className="h-4 w-4 mr-2 text-primary" /> All core systems operational.</>)
+                    ? (<><CheckCircle className="h-4 w-4 mr-2 text-[#36D399]" /> All core systems operational.</>)
                     : (<><XCircle className="h-4 w-4 mr-2 text-destructive" /> Some systems are offline or degraded.</>)
                   }
                 </p>

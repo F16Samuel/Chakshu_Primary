@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Shield, Activity } from "lucide-react";
+import { Menu, X, Shield, Activity,Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -21,18 +21,17 @@ export const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3 group">
+          <div className="flex items-center space-x-3">
             <div className="relative">
-              <Shield className="h-8 w-8 text-primary group-hover:text-accent transition-colors" />
-              <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg group-hover:bg-accent/30 transition-all" />
+              <Eye className="h-8 w-8 text-[#36D399] animate-pulse drop-shadow-[0_0_6px_#36D399]" />
+              <div className="absolute inset-0 animate-ping">
+                <Eye className="h-8 w-8 text-[#36D399] opacity-50" />
+              </div>
             </div>
-            <div className="hidden sm:block">
-              <h1 className="text-xl font-bold bg-gradient-neon bg-clip-text text-transparent">
-                CyberGuard Campus
-              </h1>
-              <p className="text-xs text-muted-foreground">Access Control System</p>
-            </div>
-          </Link>
+            <Link to="/" className="text-2xl font-bold text-[#F2F2F2] drop-shadow-[0_1px_1px_rgba(0,0,0,0.3)]">
+              Chak<span className="text-[#36D399]">shu</span>
+            </Link>
+          </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-1">

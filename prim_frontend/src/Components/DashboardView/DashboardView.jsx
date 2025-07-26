@@ -25,14 +25,8 @@ const DashboardView = () => {
                   </div>
                 </div>
                 <div className="flex space-x-2">
-                  <Link to='/viewdata' className="px-3 py-1 text-white rounded text-xs font-bold flex justify-center">
-                     View Personnel Data
-                  </Link>
-                  <Link to='/faceid' className="px-3 py-1 text-white rounded text-xs font-bold flex justify-center">
-                     Add Face ID
-                  </Link>
                   <div className="px-3 py-1 bg-[#36D399] text-primary-foreground rounded text-xs font-bold">
-                    12 CAMERAS ONLINE
+                    4 CAMERAS ONLINE
                   </div>
                   <div className="px-3 py-1 bg-[#00AAFF] text-primary-foreground rounded text-xs font-bold">
                     0 THREATS
@@ -55,7 +49,7 @@ const DashboardView = () => {
                     Live Camera Feeds
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
-                    {[1, 2, 3, 4,'+'].map((i) => (
+                    {[1, 2, 3, 4].map((i) => (
                       <div key={i} className="bg-[#1F2733] rounded-lg p-4 relative overflow-hidden">
                         <div className="absolute top-2 left-2 z-10">
                           <span className="bg-[#36D399] text-primary-foreground px-2 py-1 rounded text-xs font-bold">
@@ -70,7 +64,6 @@ const DashboardView = () => {
                           {i === 2 && "No Threat"}
                           {i === 3 && "No Threat"}
                           {i === 4 && "No Threat"}
-                          {i === '+' && "Add Camera"}
                         </div>
                       </div>
                     ))}
@@ -99,56 +92,34 @@ const DashboardView = () => {
                     <div className="bg-[#1F2733] rounded-lg p-4">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-white text-sm font-medium">Weapon Scan</span>
-                        <span className="text-xs text-[#36D399]">ACTIVE</span>
+                        <span className="text-xs text-[#CC66FF]">ACTIVE</span>
                       </div>
                       <div className="w-full bg-background rounded-full h-2">
-                        <div className="bg-[#36D399] h-2 rounded-full w-full"></div>
+                        <div className="bg-[#CC66FF] h-2 rounded-full w-full"></div>
                       </div>
                     </div>
                     
                     <div className="bg-[#1F2733] rounded-lg p-4">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-white text-sm font-medium">Face ID System</span>
-                        <span className="text-xs text-[#00AAFF]">STANDBY</span>
+                        <span className="text-xs text-[#00AAFF]">ACTIVE</span>
                       </div>
                       <div className="w-full bg-background rounded-full h-2">
-                        <div className="bg-[#00AAFF] h-2 rounded-full w-4/5"></div>
+                        <div className="bg-[#00AAFF] h-2 rounded-full w-full"></div>
                       </div>
                     </div>
                     
                     <div className="bg-[#1F2733] rounded-lg p-4">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-white text-sm font-medium">Zone Monitor</span>
-                        <span className="text-xs text-[#36D399]">ACTIVE</span>
+                        <span className="text-xs text-[#FF9933]">ACTIVE</span>
                       </div>
                       <div className="w-full bg-background rounded-full h-2">
-                        <div className="bg-[#36D399] h-2 rounded-full w-full"></div>
+                        <div className="bg-[#FF9933] h-2 rounded-full w-full"></div>
                       </div>
                     </div>
 
                     </div>
-                    <div className="mt-6">
-                        <h5 className="text-white text-md font-semibold mb-3 flex justify-center mt-[4rem]">Attendance Chart</h5>
-                        <div className="space-y-2 text-sm">
-                        <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-[#36D399] rounded-full"></div>
-                            <span className="text-white">Students on campus : </span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-[#00AAFF] rounded-full"></div>
-                            <span className="text-white">Students off campus : </span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-[#FF9933] rounded-full"></div>
-                            <span className="text-white">Staff on campus : </span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-[#CC66FF] rounded-full"></div>
-                            <span className="text-white">Professors on campus : </span>
-                        </div>
-                        </div>
-                    </div>
-
                 </div>
               </div>
             </div>

@@ -59,9 +59,9 @@ export const ActivityFeed = ({
   const getActionIcon = (action: ActivityEntry['action']) => {
     switch (action) {
       case "entry":
-        return <ArrowRight className="h-4 w-4 text-primary" />;
+        return <ArrowRight className="h-4 w-4 text-white" />;
       case "exit":
-        return <ArrowLeft className="h-4 w-4 text-orange-500" />;
+        return <ArrowLeft className="h-4 w-4 text-white" />;
       case "entry_attempt_already_on":
       case "exit_attempt_already_off":
         return <AlertTriangle className="h-4 w-4 text-yellow-500" />; // Warning icon for attempts
@@ -74,9 +74,9 @@ export const ActivityFeed = ({
   const getActionColor = (action: ActivityEntry['action']) => {
     switch (action) {
       case "entry":
-        return "text-primary border-primary/30 bg-primary/10";
+        return "text-white border-[#1F2733] bg-[#31B184]";
       case "exit":
-        return "text-orange-500 border-orange-500/30 bg-orange-500/10";
+        return "text-white border-[#1F2733] bg-[#EB4747]";
       case "entry_attempt_already_on":
       case "exit_attempt_already_off":
         return "text-yellow-500 border-yellow-500/30 bg-yellow-500/10"; // Yellow for attempts
@@ -100,11 +100,11 @@ export const ActivityFeed = ({
   console.log("DEBUG: Filtered recent activities (showing top maxItems):", recentActivities.length);
 
   return (
-    <Card className={cn("bg-gradient-card border-primary/30", className)}>
-      <div className="p-4 border-b border-primary/30">
+    <Card className={cn("bg-[#1F2733] border-[#1F2733]", className)}>
+      <div className="p-4 border-b border-[#52525B]">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-lg flex items-center space-x-2">
-            <Clock className="h-5 w-5 text-primary" />
+            <Clock className="h-5 w-5 text-white" />
             <span>Recent Activity</span>
           </h3>
           <Badge variant="secondary" className="text-xs">
@@ -139,9 +139,9 @@ export const ActivityFeed = ({
                 <div
                   key={activity.id}
                   className={cn(
-                    "group relative p-3 rounded-lg transition-all duration-200 hover:bg-primary/5",
+                    "group relative p-3 rounded-lg transition-all duration-200 hover:bg-[#52525B]",
                     // Apply different background for the most recent entry
-                    index === 0 && "bg-primary/10 border border-primary/20"
+                    index === 0 && ""
                   )}
                 >
                   <div className="flex items-center justify-between">
@@ -176,12 +176,12 @@ export const ActivityFeed = ({
                           {/* Changed "manual" to "kiosk_capture" */}
                           {activity.method === "kiosk_capture" && (
                             <Badge variant="secondary" className="text-xs">
-                              Kiosk Capture
+                              Capture
                             </Badge>
                           )}
                           {/* Display formatted confidence */}
                           {activity.confidence !== undefined && activity.confidence !== null && (
-                            <span className="text-primary">
+                            <span className="text-muted-foreground">
                               {confidenceDisplay}
                             </span>
                           )}
@@ -204,7 +204,7 @@ export const ActivityFeed = ({
 
                   {/* New entry indicator (only for the very first item, which is the most recent) */}
                   {index === 0 && (
-                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-primary rounded-r" />
+                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6" />
                   )}
                 </div>
               );
@@ -214,7 +214,7 @@ export const ActivityFeed = ({
       </div>
       
       {recentActivities.length >= maxItems && (
-        <div className="p-3 border-t border-primary/30 text-center">
+        <div className="p-3 border-t border-[#1F2733] text-center">
           <p className="text-xs text-muted-foreground">
             Showing last {maxItems} entries
           </p>

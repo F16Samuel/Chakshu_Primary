@@ -75,25 +75,25 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
 
 
   return (
-    <Card className={cn("flex flex-col bg-gradient-card border-primary/30 shadow-lg p-0", className)}>
+    <Card className={cn("flex flex-col bg-[#1F2733] border-[#1F2733]/30 shadow-lg p-0", className)}>
       {/* Header */}
-      <div className="relative bg-card/50 border-b border-primary/30 p-4">
+      <div className="relative bg-card/50 border-b border-[#1F2733]/30 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="relative">
-              <CameraIcon className="h-5 w-5 text-primary" />
+              <CameraIcon className="h-5 w-5 text-[#36D399]" />
               {isWebcamActive && ( // Show active indicator based on local webcam status
-                <div className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full animate-pulse" />
+                <div className="absolute -top-1 -right-1 h-3 w-3 bg-[#36D399] rounded-full animate-pulse" />
               )}
             </div>
-            <h3 className="font-semibold text-lg text-primary-foreground">{title}</h3>
+            <h3 className="font-semibold text-lg text-[#36D399]-foreground">{title}</h3>
           </div>
           
           <div className={cn(
             "px-3 py-1 rounded-full text-xs font-medium border",
             isWebcamActive
-              ? "bg-primary/20 text-primary border-primary/50 shadow-glow-subtle"
-              : "bg-muted text-muted-foreground border-border"
+              ? "bg-[#36D399]/20 text-[#36D399] border-[#1F2733]/50 shadow-glow-subtle"
+              : "bg-muted text-muted-foreground border-[#1F2733]"
           )}>
             {isWebcamActive ? "ACTIVE" : "INACTIVE"}
           </div>
@@ -101,7 +101,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
       </div>
 
       {/* Video Feed / Webcam Display */}
-      <div className="relative flex-grow aspect-video bg-black rounded-b-lg overflow-hidden flex items-center justify-center border-t-0 border border-border">
+      <div className="relative flex-grow aspect-video bg-black rounded-b-lg overflow-hidden flex items-center justify-center border-t-0 border border-[#1F2733]">
         {webcamError ? (
           <div className="text-destructive text-center p-4">
             <AlertCircle className="h-12 w-12 mx-auto mb-2" />
@@ -133,13 +133,13 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
             )}
 
             {/* Title Overlay (positioned at the bottom now, or remove if redundant) */}
-            <div className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm border border-primary/30 rounded-md px-3 py-1">
-              <span className="text-primary font-mono text-sm font-bold">{title}</span>
+            <div className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm border border-[#36D399]/30 rounded-md px-3 py-1">
+              <span className="text-[#36D399] font-mono text-sm font-bold">{title}</span>
             </div>
 
             {/* Camera Source Indicator */}
-            <div className="absolute top-4 right-4 bg-card/90 backdrop-blur-sm border border-primary/30 rounded-md px-2 py-1">
-              <Video className="h-4 w-4 text-primary" /> {/* Always local webcam now */}
+            <div className="absolute top-4 right-4 bg-card/90 backdrop-blur-sm border border-[#36D399]/30 rounded-md px-2 py-1">
+              <Video className="h-4 w-4 text-[#36D399]" /> {/* Always local webcam now */}
             </div>
           </>
         )}
@@ -150,7 +150,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
         <Button
           onClick={handleCapture}
           disabled={loading || disabled || !isWebcamActive} // Disable if loading, externally disabled, or webcam not active
-          className="bg-primary hover:bg-primary-dark text-primary-foreground font-bold py-2 px-6 rounded-lg shadow-md transition-all duration-200"
+          className="bg-[#36D399] hover:bg-[#36D399]-dark text-[#36D399]-foreground font-bold py-2 px-6 rounded-lg shadow-md transition-all duration-200"
         >
           {loading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

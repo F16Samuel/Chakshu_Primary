@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/layout/AppSidebar";
+import { AppSidebar } from "../src/components/layout/AppSidebar";
 import { Header } from "@/components/layout/Header";
 import Dashboard from "./pages/Dashboard";
 import Register from "./pages/Register";
@@ -12,9 +12,9 @@ import Personnel from "./pages/Personnel";
 import Monitor from "./pages/Monitor";
 import Manual from "./pages/Manual";
 import NotFound from "./pages/NotFound";
+import { useState } from "react";
 
 const queryClient = new QueryClient();
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -25,10 +25,6 @@ const App = () => (
           <div className="min-h-screen flex w-full bg-gradient-primary">
             <AppSidebar />
             <div className="flex-1 flex flex-col">
-              <header className="h-12 flex items-center border-b border-primary/20 bg-card/30 backdrop-blur-sm lg:hidden">
-                <SidebarTrigger className="ml-4 text-primary" />
-                <h1 className="ml-4 text-lg font-semibold text-primary">CyberGuard Campus</h1>
-              </header>
               <main className="flex-1">
                 <Routes>
                   <Route path="/" element={<Dashboard />} />

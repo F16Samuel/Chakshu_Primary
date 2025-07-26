@@ -33,7 +33,7 @@ const LoginTable = () => {
 
     if (mode === "login") {
       try {
-        const res = await axios.post("http://localhost:8080/auth/login", {
+        const res = await axios.post("http://localhost:3002/auth/login", {
           email: formData.email,
           password: formData.password,
         });
@@ -54,7 +54,7 @@ const LoginTable = () => {
       }
 
       try {
-        const res = await axios.post("http://localhost:8080/auth/signup", {
+        const res = await axios.post("http://localhost:3002/auth/signup", {
           name: formData.name,
           email: formData.email,
           password: formData.password,

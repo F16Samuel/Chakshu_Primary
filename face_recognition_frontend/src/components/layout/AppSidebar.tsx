@@ -19,7 +19,7 @@ const detectionSystems = [
     description: "Main control center",
     url: import.meta.env.VITE_APP_DASHBOARD_URL || "http://localhost:3000",
     icon: Shield,
-    isActive: false, // Current app
+    isActive: false,
   },
   {
     title: "Face ID",
@@ -61,10 +61,10 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className="border-r border-primary/20 bg-gradient-to-b from-card/50 to-card/30">
+    <Sidebar className="border-r bg-[#101921] border border-[#424953] from-card/50 to-card/30">
       <SidebarContent className="py-6">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary text-lg font-semibold mb-4 px-4">
+          <SidebarGroupLabel className="text-xl font-semibold mb-6 px-2">
             Detection Systems
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -76,10 +76,10 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       onClick={() => handleNavigation(system.url, system.isActive)}
                       className={`
-                        h-16 px-4 rounded-lg transition-all duration-300 cursor-pointer group
+                        h-17 px-4 rounded-lg transition-all duration-300 cursor-pointer group
                         ${system.isActive 
-                          ? 'bg-primary/20 border border-primary/50 shadow-glow-subtle text-primary' 
-                          : 'hover:bg-primary/10 hover:border-primary/30 text-muted-foreground hover:text-primary'
+                          ? 'bg-[#101921] border border-[#3F3F47] text-white' 
+                          : 'hover:bg-zinc-600 hover:border-[zinc-600] text-muted-foreground hover:text-white'
                         }
                       `}
                       asChild
@@ -88,8 +88,8 @@ export function AppSidebar() {
                         <div className={`
                           p-2 rounded-md transition-colors
                           ${system.isActive 
-                            ? 'bg-primary/30 text-primary' 
-                            : 'bg-muted/20 text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary'
+                            ? 'bg-[#52525C] text-white' 
+                            : 'bg-muted/20 text-muted-foreground'
                           }
                         `}>
                           <Icon className="h-5 w-5" />
