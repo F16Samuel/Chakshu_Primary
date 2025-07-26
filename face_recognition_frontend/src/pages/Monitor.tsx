@@ -292,13 +292,13 @@ export default function Monitor() {
   };
 
   return (
-    <div className="min-h-full bg-gradient-primary">
+    <div className="min-h-full bg-[#101921]">
       <TopButtons /> {/* Add the TopButtons component here */}
       <div className="container mx-auto px-4 py-8">
         {/* Header - This existing header content will now appear below TopButtons */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-neon bg-clip-text text-transparent mb-2">
-            Campus Access Kiosk
+          <h1 className="text-3xl font-bold bg-white bg-clip-text text-transparent mb-2">
+            Campus Access
           </h1>
           <p className="text-muted-foreground">
             Capture photos for campus entry and exit recognition
@@ -333,7 +333,7 @@ export default function Monitor() {
           {/* Camera Feeds (now local webcam capture) */}
           <div className="xl:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
             <CameraFeed
-              title="ENTRY KIOSK"
+              title="ENTRY"
               onCapture={handleCaptureEntry}
               loading={isEntryCapturing}
               // Disable entry if exit is currently capturing to avoid race conditions/errors
@@ -341,7 +341,7 @@ export default function Monitor() {
             />
 
             <CameraFeed
-              title="EXIT KIOSK"
+              title="EXIT"
               onCapture={handleCaptureExit}
               loading={isExitCapturing}
               // Disable exit if entry is currently capturing
@@ -352,9 +352,9 @@ export default function Monitor() {
           {/* Control Panel Sidebar */}
           <div className="space-y-6">
             {/* Personnel Count */}
-            <Card className="bg-gradient-card border-primary/30 p-6">
+            <Card className="bg-[#1F2733] border-[#424953]  p-6">
               <h3 className="font-semibold mb-4 flex items-center space-x-2">
-                <Users className="h-5 w-5 text-primary" />
+                <Users className="h-5 w-5 text-white" />
                 <span>Personnel On Site</span>
               </h3>
 
@@ -362,7 +362,7 @@ export default function Monitor() {
                 {loadingPersonnel ? (
                   <p className="text-xl text-muted-foreground animate-pulse">Loading...</p>
                 ) : (
-                  <p className="text-3xl font-bold text-primary">{totalOnSite}</p>
+                  <p className="text-3xl font-bold text-[#36D399]">{totalOnSite}</p>
                 )}
                 <p className="text-sm text-muted-foreground">Total Present</p>
               </div>
@@ -391,9 +391,9 @@ export default function Monitor() {
             </Card>
 
             {/* Today's Stats */}
-            <Card className="bg-gradient-card border-primary/30 p-6">
+            <Card className="bg-[#1F2733] border-[#424953]  p-6">
               <h3 className="font-semibold mb-4 flex items-center space-x-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
+                <BarChart3 className="h-5 w-5 text-white" />
                 <span>Today's Activity</span>
               </h3>
 
@@ -402,7 +402,7 @@ export default function Monitor() {
                   {loadingTodayStats ? (
                     <p className="text-xl text-muted-foreground animate-pulse">Loading...</p>
                   ) : (
-                    <p className="text-2xl font-bold text-primary">{todayStats.totalEntries}</p>
+                    <p className="text-2xl font-bold text-[#36D399]">{todayStats.totalEntries}</p>
                   )}
                   <p className="text-xs text-muted-foreground">Total Movements</p>
                 </div>

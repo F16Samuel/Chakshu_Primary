@@ -332,9 +332,9 @@ export default function Manual() {
   const getActionIcon = (action: ManualEntry['action']) => {
     switch (action) {
       case "entry":
-        return <ArrowRight className="h-4 w-4 text-primary" />;
+        return <ArrowRight className="h-4 w-4 text-[#36D399]" />;
       case "exit":
-        return <ArrowLeft className="h-4 w-4 text-orange-500" />;
+        return <ArrowLeft className="h-4 w-4 text-red-600" />;
       case "entry_attempt_already_on":
       case "exit_attempt_already_off":
         return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
@@ -346,9 +346,9 @@ export default function Manual() {
   const getActionColor = (action: ManualEntry['action']) => {
     switch (action) {
       case "entry":
-        return "text-primary border-primary/30 bg-primary/10";
+        return "text-[#36D399] bg-[#1F2733] border-[#424953]";
       case "exit":
-        return "text-orange-500 border-orange-500/30 bg-orange-500/10";
+        return "text-red-500 bg-[#1F2733] border-[#424953]";
       case "entry_attempt_already_on":
       case "exit_attempt_already_off":
         return "text-yellow-500 border-yellow-500/30 bg-yellow-500/10";
@@ -373,9 +373,9 @@ export default function Manual() {
   const getStatusIcon = (status: ManualEntry['status']) => {
     switch (status) {
       case "success":
-        return <CheckCircle className="h-4 w-4 text-primary" />;
+        return <CheckCircle className="h-4 w-4 text-[#36D399]" />;
       case "failed":
-        return <AlertCircle className="h-4 w-4 text-destructive" />;
+        return <AlertCircle className="h-4 w-4 text-red" />;
       case "processing":
         return <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />;
       default:
@@ -398,12 +398,12 @@ export default function Manual() {
   // --- END MANUAL PAGE SPECIFIC HELPERS ---
 
   return (
-    <div className="min-h-full bg-gradient-primary">
+    <div className="min-h-full bg-[#101921]">
       <TopButtons /> {/* Add the TopButtons component here */}
       <div className="container mx-auto px-4 py-8">
         {/* Header - This existing header content will now appear below TopButtons */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-neon bg-clip-text text-transparent mb-2">
+          <h1 className="text-3xl font-bold bg-white bg-clip-text text-transparent mb-2">
             Manual Recognition
           </h1>
           <p className="text-muted-foreground">
@@ -415,9 +415,9 @@ export default function Manual() {
           {/* Processing Panel */}
           <div className="space-y-6">
             {/* Upload Section */}
-            <Card className="bg-gradient-card border-primary/30 p-6">
+            <Card className="bg-[#1F2733] border-[#424953] p-6">
               <h2 className="text-xl font-semibold mb-6 flex items-center space-x-2">
-                <Upload className="h-5 w-5 text-primary" />
+                <Upload className="h-5 w-5 text-white" />
                 <span>Photo Upload</span>
               </h2>
 
@@ -430,9 +430,9 @@ export default function Manual() {
             </Card>
 
             {/* Action Selection */}
-            <Card className="bg-gradient-card border-primary/30 p-6">
+            <Card className="bg-[#1F2733] border-[#424953] p-6">
               <h2 className="text-xl font-semibold mb-6 flex items-center space-x-2">
-                <User className="h-5 w-5 text-primary" />
+                <User className="h-5 w-5 text-white" />
                 <span>Action Selection</span>
               </h2>
 
@@ -441,19 +441,19 @@ export default function Manual() {
                   value={selectedAction}
                   onValueChange={(value) => setSelectedAction(value as "entry" | "exit" | "")}
                 >
-                  <SelectTrigger className="bg-input border-border">
+                  <SelectTrigger className="bg-[#101921] border-[#1F2733]">
                     <SelectValue placeholder="Select action" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="entry">
                       <div className="flex items-center space-x-2">
-                        <LogIn className="h-4 w-4 text-primary" />
+                        <LogIn className="h-4 w-4 text-[#34CD95]" />
                         <span>Entry</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="exit">
                       <div className="flex items-center space-x-2">
-                        <LogOut className="h-4 w-4 text-orange-500" />
+                        <LogOut className="h-4 w-4 text-[red]" />
                         <span>Exit</span>
                       </div>
                     </SelectItem>
@@ -483,16 +483,16 @@ export default function Manual() {
 
             {/* Results Section */}
             {(result || isProcessing) && (
-              <Card className="bg-gradient-card border-primary/30 p-6">
+              <Card className="bg-[#1F2733] border-[#1F2733] p-6">
                 <h2 className="text-xl font-semibold mb-6 flex items-center space-x-2">
-                  <CheckCircle className="h-5 w-5 text-primary" />
+                  <CheckCircle className="h-5 w-5 text-white" />
                   <span>Results</span>
                 </h2>
 
                 {isProcessing ? (
                   <div className="text-center py-8">
-                    <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-primary font-medium">Processing recognition...</p>
+                    <div className="h-12 w-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                    <p className="text-white font-medium">Processing recognition...</p>
                     <p className="text-sm text-muted-foreground mt-1">This may take a few seconds</p>
                   </div>
                 ) : result && (
@@ -549,19 +549,19 @@ export default function Manual() {
           </div>
 
           {/* Recent Entries */}
-          <Card className="bg-gradient-card border-primary/30">
-            <div className="p-6 border-b border-primary/30">
+          <Card className="bg-[#101921] border-[#1F2733]">
+            <div className="p-6 border-b border-[#1F2733]">
               <h2 className="text-xl font-semibold flex items-center space-x-2">
-                <Clock className="h-5 w-5 text-primary" />
+                <Clock className="h-5 w-5 text-white" />
                 <span>Recent Manual Entries</span>
-                {isActivitiesLoading && <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin ml-2" />}
+                {isActivitiesLoading && <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin ml-2" />}
               </h2>
             </div>
 
             <div className="max-h-96 overflow-y-auto">
               {isActivitiesLoading ? (
                 <div className="p-8 text-center">
-                  <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                  <div className="h-12 w-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                   <p className="text-muted-foreground">Loading recent activities...</p>
                 </div>
               ) : recentEntries.length === 0 ? (
@@ -582,8 +582,8 @@ export default function Manual() {
                       <div
                         key={entry.id}
                         className={cn(
-                          "group relative p-3 rounded-lg transition-all duration-200 hover:bg-primary/5",
-                          index === 0 && "bg-primary/10 border border-primary/20"
+                          "group relative p-3 rounded-lg transition-all duration-200 hover:bg-[#52525B]",
+                          index === 0 && ""
                         )}
                       >
                         <div className="flex items-center justify-between">
@@ -617,11 +617,11 @@ export default function Manual() {
                                 <span>ID: {entry.userId}</span>
                                 {entry.method === "kiosk_capture" && (
                                   <Badge variant="secondary" className="text-xs">
-                                    Kiosk Capture
+                                    Capture
                                   </Badge>
                                 )}
                                 {entry.confidence !== undefined && entry.confidence !== null && (
-                                  <span className="text-primary">
+                                  <span className="text-[#9A9A9B]">
                                     {confidenceDisplay}
                                   </span>
                                 )}
@@ -647,7 +647,7 @@ export default function Manual() {
 
                         {/* New entry indicator */}
                         {index === 0 && (
-                          <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-primary rounded-r" />
+                          <div className="" />
                         )}
                       </div>
                     );

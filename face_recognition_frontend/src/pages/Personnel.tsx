@@ -132,12 +132,12 @@ export default function Personnel() {
 
 
   return (
-    <div className="min-h-full bg-gradient-primary">
+    <div className="min-h-full bg-[#101921]">
       <TopButtons /> {/* Add the TopButtons component here */}
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-neon bg-clip-text text-transparent mb-2">
+          <h1 className="text-3xl font-bold bg-white bg-clip-text text-transparent mb-2">
             Personnel Management
           </h1>
           <p className="text-muted-foreground">
@@ -147,7 +147,7 @@ export default function Personnel() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-gradient-card border-primary/30 p-6">
+          <Card className="bg-[#1F2733] border-[#424953] p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-muted-foreground text-sm">Total Personnel</p>
@@ -157,41 +157,41 @@ export default function Personnel() {
                     <p className="text-2xl font-bold text-foreground">{totalCount}</p>
                 )}
               </div>
-              <Users className="h-8 w-8 text-primary" />
+              <Users className="h-8 w-8 text-white" />
             </div>
           </Card>
 
-          <Card className="bg-gradient-card border-primary/30 p-6">
+          <Card className="bg-[#1F2733] border-[#424953] p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-muted-foreground text-sm">Currently On Site</p>
                 {isLoading ? (
-                    <p className="text-2xl font-bold text-primary animate-pulse">...</p>
+                    <p className="text-2xl font-bold text-white animate-pulse">...</p>
                 ) : (
-                    <p className="text-2xl font-bold text-primary">{onSiteCount}</p>
+                    <p className="text-2xl font-bold text-white">{onSiteCount}</p>
                 )}
               </div>
-              <UserCheck className="h-8 w-8 text-primary" />
+              <UserCheck className="h-8 w-8 text-white" />
             </div>
           </Card>
 
-          <Card className="bg-gradient-card border-primary/30 p-6">
+          <Card className="bg-[#1F2733] border-[#424953] p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-muted-foreground text-sm">Off Site</p>
                 {isLoading ? (
-                    <p className="text-2xl font-bold text-muted-foreground animate-pulse">...</p>
+                    <p className="text-2xl font-bold text-white animate-pulse">...</p>
                 ) : (
-                    <p className="text-2xl font-bold text-muted-foreground">{totalCount - onSiteCount}</p>
+                    <p className="text-2xl font-bold text-white">{totalCount - onSiteCount}</p>
                 )}
               </div>
-              <UserX className="h-8 w-8 text-muted-foreground" />
+              <UserX className="h-8 w-8 text-white" />
             </div>
           </Card>
         </div>
 
         {/* Search and Filters */}
-        <Card className="bg-gradient-card border-primary/30 p-6 mb-8">
+        <Card className="bg-[#1F2733] border-[#424953] p-6 mb-8">
           <div className="space-y-6">
             {/* Search Bar */}
             <div className="relative">
@@ -200,7 +200,7 @@ export default function Personnel() {
                 placeholder="Search personnel by name or ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-input border-border"
+                className="pl-10 bg-[#101921] border-[#101921]"
               />
             </div>
 
@@ -209,7 +209,7 @@ export default function Personnel() {
               {/* Role Filters */}
               <div>
                 <h3 className="text-sm font-medium mb-3 flex items-center space-x-2">
-                  <Filter className="h-4 w-4 text-primary" />
+                  <Filter className="h-4 w-4 text-white" />
                   <span>Filter by Role</span>
                 </h3>
                 <div className="flex flex-wrap gap-2">
@@ -220,7 +220,7 @@ export default function Personnel() {
                       size="sm"
                       onClick={() => setSelectedRole(filter.id)}
                       className={cn(
-                        selectedRole === filter.id && "shadow-glow-subtle"
+                        selectedRole === filter.id && "shadow-white"
                       )}
                     >
                       <filter.icon className="h-4 w-4 mr-2" />
@@ -241,7 +241,7 @@ export default function Personnel() {
                       size="sm"
                       onClick={() => setSelectedStatus(filter.id)}
                       className={cn(
-                        selectedStatus === filter.id && "shadow-glow-subtle"
+                        selectedStatus === filter.id && "shadow-white"
                       )}
                     >
                       <filter.icon className="h-4 w-4 mr-2" />
@@ -253,7 +253,7 @@ export default function Personnel() {
             </div>
 
             {/* Results Summary */}
-            <div className="flex items-center justify-between pt-4 border-t border-border">
+            <div className="flex items-center justify-between pt-4 border-t border-[#101921]">
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-muted-foreground">
                   Showing {filteredUsers.length} of {totalCount} personnel
@@ -282,15 +282,15 @@ export default function Personnel() {
 
         {/* Loading/Error/Personnel Grid */}
         {isLoading ? (
-          <Card className="bg-gradient-card border-primary/30 p-12 text-center">
+          <Card className="bg-[#1F2733] border-[#424953] p-12 text-center">
             <div className="flex items-center justify-center mb-4">
-              <Users className="h-16 w-16 text-primary animate-pulse" />
+              <Users className="h-16 w-16 text-white animate-pulse" />
             </div>
             <h3 className="text-lg font-semibold mb-2">Loading Personnel...</h3>
             <p className="text-muted-foreground">Fetching data from the server.</p>
           </Card>
         ) : error ? (
-          <Card className="bg-gradient-card border-destructive/30 p-12 text-center">
+          <Card className="bg-[#1F2733] border-[#424953] p-12 text-center">
             <div className="flex items-center justify-center mb-4">
               <UserX className="h-16 w-16 text-destructive" />
             </div>
@@ -301,9 +301,9 @@ export default function Personnel() {
             </Button>
           </Card>
         ) : filteredUsers.length === 0 ? (
-          <Card className="bg-gradient-card border-primary/30 p-12">
+          <Card className="text-whitebg-[#1F2733] border-[#424953] p-12">
             <div className="text-center">
-              <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <Users className="h-16 w-16 text-white mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">No Personnel Found</h3>
               <p className="text-muted-foreground">
                 {searchQuery || selectedRole !== "all" || selectedStatus !== "all"

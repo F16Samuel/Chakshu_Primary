@@ -130,7 +130,7 @@ export const FileUpload = ({
         onDragLeave={handleDragLeave}
         onClick={handleClick}
       >
-        <div className="p-8 text-center">
+        <div className="p-8 text-center bg-[#101921]">
           <div className="relative inline-block mb-4">
             <Upload className={cn(
               "h-12 w-12 mx-auto transition-colors",
