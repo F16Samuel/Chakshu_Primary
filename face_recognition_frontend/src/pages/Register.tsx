@@ -211,13 +211,13 @@ export default function Register() {
     formData.facePhoto2.length > 0;
 
   return (
-    <div className="min-h-full bg-gradient-primary">
+    <div className="min-h-full bg-[#121821]">
       <TopButtons /> {/* Add the TopButtons component here */}
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold bg-gradient-neon bg-clip-text text-transparent mb-2">
+            <h1 className="text-3xl font-bold bg-white bg-clip-text text-transparent mb-2">
               Personnel Registration
             </h1>
             <p className="text-muted-foreground">
@@ -227,9 +227,9 @@ export default function Register() {
 
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Basic Information */}
-            <Card className="bg-gradient-card border-primary/30 p-6">
+            <Card className="bg-[#1F2733] border-[#1A222D] p-6">
               <h2 className="text-xl font-semibold mb-6 flex items-center space-x-2">
-                <User className="h-5 w-5 text-primary" />
+                <User className="h-5 w-5 text-white" />
                 <span>Basic Information</span>
               </h2>
 
@@ -241,7 +241,7 @@ export default function Register() {
                     value={formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     placeholder="Enter full name"
-                    className="bg-input border-border"
+                    className="bg-[#171D26] border-[#1F2733]"
                   />
                 </div>
 
@@ -252,14 +252,14 @@ export default function Register() {
                     value={formData.idNumber}
                     onChange={(e) => handleInputChange("idNumber", e.target.value)}
                     placeholder="Enter ID number"
-                    className="bg-input border-border"
+                    className="bg-[#171D26] border-[#1F2733]"
                   />
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="role">Role *</Label>
                   <Select value={formData.role} onValueChange={(value) => handleInputChange("role", value)}>
-                    <SelectTrigger className="bg-input border-border">
+                    <SelectTrigger className="bg-[#171D26] border-[#1F2733]">
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent>
@@ -274,9 +274,9 @@ export default function Register() {
             </Card>
 
             {/* Document Uploads */}
-            <Card className="bg-gradient-card border-primary/30 p-6">
+            <Card className="bg-[#1F2733] border-[#1A222D] p-6">
               <h2 className="text-xl font-semibold mb-6 flex items-center space-x-2">
-                <Upload className="h-5 w-5 text-primary" />
+                <Upload className="h-5 w-5 text-white" />
                 <span>Document Uploads</span>
               </h2>
 
@@ -300,9 +300,9 @@ export default function Register() {
             </Card>
 
             {/* Face Photos */}
-            <Card className="bg-gradient-card border-primary/30 p-6">
+            <Card className="bg-[#1F2733] border-[#1A222D] p-6">
               <h2 className="text-xl font-semibold mb-6 flex items-center space-x-2">
-                <Camera className="h-5 w-5 text-primary" />
+                <Camera className="h-5 w-5 text-white" />
                 <span>Face Recognition Photos</span>
               </h2>
 
@@ -333,13 +333,13 @@ export default function Register() {
                     variant="outline"
                     onClick={() => setShowWebcam(!showWebcam)}
                   >
-                    <Camera className="h-4 w-4 mr-2" />
+                    <Camera className="h-4 w-4 mr-2 text-white" />
                     {showWebcam ? "Hide Camera" : "Use Camera"}
                   </Button>
                 </div>
 
                 {showWebcam && (
-                  <Card className="bg-card/50 border-primary/20 p-4">
+                  <Card className="bg-card/50 border-white/20 p-4">
                     <div className="aspect-video bg-muted rounded-lg overflow-hidden">
                       <Webcam
                         ref={webcamRef}
@@ -379,10 +379,10 @@ export default function Register() {
             </Card>
 
             {/* Form Status */}
-            <Card className="bg-gradient-card border-primary/30 p-6">
+            <Card className="bg-[#1F2733] border-[#1A222D] p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <CheckCircle className={`h-6 w-6 ${isFormValid ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <CheckCircle className={`h-6 w-6 ${isFormValid ? 'text-white' : 'text-muted-foreground'}`} />
                   <div>
                     <p className="font-medium">Registration Form</p>
                     <p className="text-sm text-muted-foreground">

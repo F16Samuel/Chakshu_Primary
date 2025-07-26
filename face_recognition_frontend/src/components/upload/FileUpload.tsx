@@ -109,7 +109,7 @@ export const FileUpload = ({
     if (file.type.startsWith("image/")) {
       // For images, show a preview if possible, or the image icon
       // You might add a small image preview here in a real app
-      return <Image className="h-8 w-8 text-primary" />;
+      return <Image className="h-8 w-8 text-white" />;
     }
     return <File className="h-8 w-8 text-primary" />;
   };
@@ -118,12 +118,12 @@ export const FileUpload = ({
     <div className={cn("space-y-4", className)}>
       <Card
         className={cn(
-          "border-2 border-dashed transition-all duration-300 cursor-pointer",
+          "transition-all duration-300 cursor-pointer",
           isDragOver
-            ? "border-primary bg-primary/10 shadow-glow-subtle"
-            : "border-border hover:border-primary/50 hover:bg-primary/5",
+            ? "border-[#121821] bg-primary/10"
+            : "border-[#121821]",
           error && "border-destructive",
-          internalFiles.length > 0 && "border-primary/50" // Indicate when files are selected
+          internalFiles.length > 0 && "border-[#1B2530]" // Indicate when files are selected
         )}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -168,7 +168,7 @@ export const FileUpload = ({
         <div className="space-y-2">
           <h4 className="font-medium text-sm text-foreground">Selected Files:</h4>
           {internalFiles.map((file, index) => ( // Use internalFiles here
-            <Card key={index} className="p-3 bg-card/50 border-primary/20">
+            <Card key={index} className="p-3 border-[#1B2530]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   {getFileIcon(file)}
