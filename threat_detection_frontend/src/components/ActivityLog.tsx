@@ -57,7 +57,7 @@ export function ActivityLog() {
   const getActionColor = (action: string) => {
     // These colors need to be defined in your Tailwind config or global CSS
     // For example: theme: { extend: { colors: { safe: '#48bb78', warning: '#f6ad55', threat: '#ef4444' } } }
-    return action === 'entry' ? 'safe' : 'warning';
+    return action === 'entry' ? '[#36D399]' : 'red-500';
   };
 
   const updateLogRefreshTimeDisplay = () => {
@@ -102,11 +102,11 @@ export function ActivityLog() {
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-primary" />
+            <AlertTriangle className="h-5 w-5 text-white" />
             Recent Activity
           </h2>
           {/* Badge for event count */}
-          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+          <Badge variant="outline" className="">
             {logs.length} events
           </Badge>
         </div>

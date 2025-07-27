@@ -87,7 +87,7 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({
   return (
     <div className="w-full">
       <div
-        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+        className={`border-2 border-dashed rounded-lg p-8 text-center text-white transition-colors ${
           dragOver
             ? isBeta
               ? 'border-purple-400 bg-purple-50'
@@ -101,7 +101,7 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({
         }}
         onDragLeave={() => setDragOver(false)}
       >
-        <CloudArrowUpIcon className={`mx-auto h-12 w-12 ${isBeta ? 'text-purple-400' : 'text-primary'}`} />
+        <CloudArrowUpIcon className={`mx-auto h-12 w-12 ${isBeta ? 'text-purple-400' : 'text-white'}`} />
 
         <div className="mt-4">
           <h3 className="text-lg font-medium text-foreground">
@@ -119,7 +119,7 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({
           <label className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white ${
             isBeta
               ? 'bg-purple-600 hover:bg-purple-700'
-              : 'bg-primary hover:bg-primary-dark'
+              : 'bg-[#36D399]'
           } focus:outline-none focus:ring-2 focus:ring-offset-2 ${
             isBeta ? 'focus:ring-purple-500' : 'focus:ring-primary'
           } cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}>
@@ -139,7 +139,7 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({
             <div className="w-full bg-muted rounded-full h-2">
               {/* Indeterminate progress bar for processing */}
               <div className={`h-2 rounded-full ${
-                isBeta ? 'bg-purple-600' : 'bg-primary'
+                isBeta ? 'bg-purple-600' : 'bg-[#36D399]'
               } animate-pulse`} style={{ width: '100%' }}></div>
             </div>
             <p className="text-sm text-muted-foreground mt-2">Processing video...</p>

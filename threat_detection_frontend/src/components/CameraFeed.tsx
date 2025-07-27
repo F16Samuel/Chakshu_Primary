@@ -147,9 +147,9 @@ export function CameraFeed({ camera, onDetection, onRemove, onStatusChange }: Ca
 
   const getStatusColor = () => {
     switch (camera.status) {
-      case 'connected': return 'safe';
-      case 'initializing': return 'warning';
-      case 'error': return 'threat';
+      case 'connected': return '[#101921]';
+      case 'initializing': return '[#101921]';
+      case 'error': return '[#101921]';
       default: return 'muted';
     }
   };
@@ -171,7 +171,7 @@ export function CameraFeed({ camera, onDetection, onRemove, onStatusChange }: Ca
       {/* Header */}
       <div className="flex items-center justify-between p-4 pb-2">
         <div className="flex items-center gap-2">
-          <Camera className="h-5 w-5 text-primary" />
+          <Camera className="h-5 w-5 text-white" />
           <h3 className="font-semibold text-foreground">{camera.name}</h3>
         </div>
         
@@ -188,7 +188,7 @@ export function CameraFeed({ camera, onDetection, onRemove, onStatusChange }: Ca
             variant="ghost"
             size="sm"
             onClick={onRemove}
-            className="text-muted-foreground hover:text-destructive"
+            className="text-muted-foreground hover:text-white hover:bg-inherits"
           >
             <CameraOff className="h-4 w-4" />
           </Button>
@@ -207,7 +207,7 @@ export function CameraFeed({ camera, onDetection, onRemove, onStatusChange }: Ca
         
         {camera.status === 'disconnected' && (
           <div className="absolute inset-0 flex items-center justify-center bg-secondary/50">
-            <Button onClick={startFeed} variant="outline" className="gap-2">
+            <Button onClick={startFeed} variant="outline" className="gap-2 hover:bg-[#101921]">
               <Camera className="h-4 w-4" />
               Start Camera
             </Button>
@@ -231,7 +231,7 @@ export function CameraFeed({ camera, onDetection, onRemove, onStatusChange }: Ca
             <div className="text-muted-foreground">Threats</div>
             <div className={cn(
               "font-bold text-lg",
-              displayedThreatCount > 0 ? "text-threat" : "text-safe"
+              displayedThreatCount > 0 ? "text-white" : "text-white"
             )}>
               {displayedThreatCount} 
             </div>
@@ -257,7 +257,7 @@ export function CameraFeed({ camera, onDetection, onRemove, onStatusChange }: Ca
             onClick={stopFeed} 
             variant="outline" 
             size="sm" 
-            className="w-full mt-3"
+            className="w-full mt-3 hover:bg-inherit"
           >
             Stop Feed
           </Button>

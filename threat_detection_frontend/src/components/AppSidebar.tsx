@@ -1,4 +1,5 @@
-import { Monitor, User, Shield, Users, MapPin } from "lucide-react"
+import { Shield, Eye, Target, Users, MapPin } from "lucide-react";
+import { useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -9,77 +10,76 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 
-const navigationItems = [
+const detectionSystems = [
   {
     title: "Dashboard",
-    url: import.meta.env.VITE_APP_DASHBOARD_URL,
-    icon: Monitor,
-    description: "Main control center"
+    description: "Main control center",
+    url: import.meta.env.VITE_APP_DASHBOARD_URL || "http://localhost:3000",
+    icon: Shield,
+    isActive: false,
   },
   {
     title: "Face ID",
-    url: import.meta.env.VITE_APP_FACE_ID_URL,
-    icon: User,
-    description: "Facial recognition system"
+    description: "Facial recognition system",
+    url: import.meta.env.VITE_APP_FACE_ID_URL || "http://localhost:8081",
+    icon: Eye,
+    isActive: false,
   },
   {
     title: "Weapon Detect",
-    url: import.meta.env.VITE_APP_WEAPON_DETECT_URL,
-    icon: Shield,
     description: "Weapon identification",
-    isActive: true // Current server
+    url: import.meta.env.VITE_APP_WEAPON_DETECT_URL || "http://localhost:8080",
+    icon: Target,
+    isActive: true,
   },
   {
     title: "Riot Monitor",
-    url: import.meta.env.VITE_APP_RIOT_MONITOR_URL,
+    description: "Riot detection system",
+    url: import.meta.env.VITE_APP_RIOT_MONITOR_URL || "http://localhost:3003",
     icon: Users,
-    description: "Riot detection system"
+    isActive: false,
   },
   {
     title: "Area Guard",
-    url: import.meta.env.VITE_APP_AREA_GUARD_URL,
+    description: "Restricted area monitoring",
+    url: import.meta.env.VITE_APP_AREA_GUARD_URL || "http://localhost:3004",
     icon: MapPin,
-    description: "Restricted area monitoring"
+    isActive: false,
   },
-]
+];
 
 export function AppSidebar() {
-  const { state } = useSidebar()
-  const collapsed = state === "collapsed"
+  const { state } = useSidebar();
 
-  const handleNavigation = (url: string) => {
-    // You might want to add a check here if the URL is defined,
-    // although if your env variables are set up correctly, they should be.
-    if (url) {
-      window.location.href = url
-    } else {
-      console.warn("Navigation URL is undefined for item:", url);
+  const handleNavigation = (url: string, isActive: boolean) => {
+    if (!isActive) {
+      window.location.href = url;
     }
-  }
+  };
 
   return (
-    <Sidebar className="border-r border-primary/20 bg-gradient-to-b from-card/50 to-card/30">
-      <SidebarContent className="py-6">
+    <Sidebar className="border-r bg-[#101921] border border-[#424953] from-card/50 to-card/30">
+      <SidebarContent className="py-6 bg-[#101921]">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary text-lg font-semibold mb-4 px-4">
+          <SidebarGroupLabel className="text-xl font-semibold mb-6 px-2 text-white">
             Detection Systems
           </SidebarGroupLabel>
-
           <SidebarGroupContent>
             <SidebarMenu className="space-y-2">
-              {navigationItems.map((item) => {
-                const Icon = item.icon;
+              {detectionSystems.map((system) => {
+                const Icon = system.icon;
                 return (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={system.title}>
                     <SidebarMenuButton
-                      onClick={() => handleNavigation(item.url)}
+                      onClick={() => handleNavigation(system.url, system.isActive)}
                       className={`
-                        h-16 px-4 rounded-lg transition-all duration-300 cursor-pointer group
-                        ${item.isActive 
-                          ? 'bg-primary/20 border border-primary/50 shadow-glow-subtle text-primary' 
-                          : 'hover:bg-primary/10 hover:border-primary/30 text-muted-foreground hover:text-primary'
+                        h-17 px-4 rounded-lg transition-all duration-300 cursor-pointer group
+                        ${system.isActive 
+                          ? 'bg-[#101921] border border-[#3F3F47] text-white hover:bg-[#101921] hover:text-white' 
+                          : 'hover:bg-zinc-600 hover:border-[zinc-600] text-[#A6A6A6] hover:text-white'
                         }
                       `}
                       asChild
@@ -87,9 +87,9 @@ export function AppSidebar() {
                       <div className="flex items-center space-x-4 w-full">
                         <div className={`
                           p-2 rounded-md transition-colors
-                          ${item.isActive 
-                            ? 'bg-primary/30 text-primary' 
-                            : 'bg-muted/20 text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary'
+                          ${system.isActive 
+                            ? 'bg-[#52525C] text-white' 
+                            : 'bg-muted/20 text-[#A6A6A6]'
                           }
                         `}>
                           <Icon className="h-5 w-5" />
@@ -97,10 +97,10 @@ export function AppSidebar() {
                         {state !== "collapsed" && (
                           <div className="flex-1 text-left">
                             <div className="font-medium text-base">
-                              {item.title}
+                              {system.title}
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              {item.description}
+                            <div className="text-sm text-[#A6A6A6]">
+                              {system.description}
                             </div>
                           </div>
                         )}
@@ -114,5 +114,5 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
-  )
+  );
 }
