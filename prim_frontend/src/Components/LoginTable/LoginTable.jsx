@@ -38,7 +38,7 @@ const LoginTable = () => {
     if (mode === "login") {
       try {
         // Make a POST request to the login API endpoint using the environment variable
-        const res = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/auth/login`, {
+        const res = await axios.post(`${import.meta.env.REACT_APP_API_BASE_URL}/auth/login`, {
           email: formData.email,
           password: formData.password,
         });
@@ -64,7 +64,7 @@ const LoginTable = () => {
 
       try {
         // Make a POST request to the signup API endpoint using the environment variable
-        const res = await axios.post(`${process.env.VITE_APP_API_BASE_URL}/auth/signup`, {
+        const res = await axios.post(`${import.meta.env.VITE_APP_API_BASE_URL}/auth/signup`, {
           name: formData.name,
           email: formData.email,
           password: formData.password,
