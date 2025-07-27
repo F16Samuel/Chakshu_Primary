@@ -5,9 +5,10 @@ import axios from "axios";
 
 const LoginTable = () => {
   const [mode, setMode] = useState(null); // 'login' or 'register'
-  const [formData, setFormData] = useState({});
-  const navigate = useNavigate();
+  const [formData, setFormData] = useState({}); // Stores form input data
+  const navigate = useNavigate(); // Hook for navigation
 
+  // Define questions for login and registration forms
   const questions = {
     login: [
       { name: "email", label: "Email", placeholder: "Enter your email" },
@@ -21,47 +22,57 @@ const LoginTable = () => {
     ],
   };
 
+  // Handles changes in form input fields
   const handleChange = (e) => {
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [e.target.name]: e.target.value, // Update the corresponding form data field
     }));
   };
 
+  // Handles form submission for login and registration
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevent default form submission behavior
 
+    // Handle login
     if (mode === "login") {
       try {
-        const res = await axios.post("http://localhost:3002/auth/login", {
+        // Make a POST request to the login API endpoint using the environment variable
+        const res = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/auth/login`, {
           email: formData.email,
           password: formData.password,
         });
 
+        // Store JWT token and user info in local storage
         localStorage.setItem("token", res.data.jwtToken);
         localStorage.setItem("loggedInUser", JSON.stringify({ name: res.data.name }));
-        toast.success("Login successful!");
-        navigate("/dashboard");
+        toast.success("Login successful!"); // Show success toast
+        navigate("/dashboard"); // Navigate to dashboard on success
       } catch (err) {
+        // Show error toast if login fails
         toast.error(err.response?.data?.message || "Login failed.");
       }
     }
 
+    // Handle registration
     if (mode === "register") {
+      // Check if passwords match
       if (formData.password !== formData.confirmPassword) {
         toast.error("Passwords do not match.");
         return;
       }
 
       try {
-        const res = await axios.post("http://localhost:3002/auth/signup", {
+        // Make a POST request to the signup API endpoint using the environment variable
+        const res = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/auth/signup`, {
           name: formData.name,
           email: formData.email,
           password: formData.password,
         });
-        toast.success("Registration successful!");
-        navigate("/home");
+        toast.success("Registration successful!"); // Show success toast
+        navigate("/home"); // Navigate to home on success
       } catch (err) {
+        // Show error toast if registration fails
         toast.error(err.response?.data?.message || "Registration failed.");
       }
     }
@@ -73,6 +84,7 @@ const LoginTable = () => {
         <h2 className="text-3xl font-bold text-center mb-6">Welcome to Chakshu</h2>
 
         {!mode ? (
+          // Initial view with Login and Register buttons
           <div className="flex flex-col space-y-4">
             <button
               onClick={() => setMode("login")}
@@ -88,6 +100,7 @@ const LoginTable = () => {
             </button>
           </div>
         ) : (
+          // Login/Register form
           <form className="space-y-5" onSubmit={handleSubmit}>
             <h3 className="text-2xl font-semibold text-center mb-4 capitalize">{mode} Details</h3>
 

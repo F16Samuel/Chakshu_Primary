@@ -1,31 +1,8 @@
-# FastAPI and Web Framework
-fastapi
-uvicorn[standard]
-
-# Face Recognition and Computer Vision
-face-recognition
-opencv-python
-numpy
-Pillow
-
-# Database
-motor
-pymongo
-gridfs
-
-# Environment and Configuration
-python-dotenv
-
-# File Handling
+deepface==0.0.75
+mediapipe
+fastapi==0.92.0
+numpy==1.23.2
+opencv_contrib_python==4.7.0.68
+Pillow==9.4.0
+uvicorn==0.20.0
 python-multipart
-
-# Data Validation
-pydantic
-
-# Utilities
-asyncio-mqtt
-python-jose[cryptography]
-passlib[bcrypt]
-
-# Logging and Monitoring
-loguru
