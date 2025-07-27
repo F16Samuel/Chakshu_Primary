@@ -64,3 +64,21 @@ export interface AppStats {
     active_connections: number;
   };
 }
+
+// New interface for detected video frames with image data
+export interface VideoFrameDetection {
+  frame_number: number;
+  timestamp: string;
+  detections: Detection[];
+  frame_image_base64?: string; // Base64 encoded image of the frame with bboxes
+}
+
+export interface VideoProcessResponse {
+  video_id: string;
+  status: 'completed' | 'processing' | 'failed';
+  total_frames_processed: number;
+  total_detections: number;
+  processing_duration_seconds: number;
+  detections_by_frame: VideoFrameDetection[]; // This might be empty if not all frames are returned
+  message: string;
+}

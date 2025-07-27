@@ -5,10 +5,13 @@ import {
   PlayIcon,
   TrashIcon,
   PencilIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  EyeIcon // New icon for viewing detected frames
 } from '@heroicons/react/24/outline';
 import { api } from '../api/client';
 import toast from 'react-hot-toast';
+import { VideoFrameDetection } from '@/types/detection'; // Import the new type
+import { VideoActivityLog } from './VideoActivityLog'; // Import the new component
 
 interface VideoModalProps {
   video: Video;
@@ -30,6 +33,7 @@ export const VideoModal: React.FC<VideoModalProps> = ({
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(video.original_filename);
   const [processing, setProcessing] = useState(false);
+  const [showDetectedFramesLog, setShowDetectedFramesLog] = useState(false); // New state to toggle the log
 
   if (!isOpen) return null;
 
@@ -48,11 +52,13 @@ export const VideoModal: React.FC<VideoModalProps> = ({
 
   const handleDelete = async () => {
     // Replaced window.confirm with a custom modal/dialog if needed in a real app
-    // For this example, we'll keep it simple, but note the instruction to avoid alert/confirm
     if (!confirm('Are you sure you want to delete this video?')) return;
 
     try {
-      await api.delete(`/library/${video.id}`);
+      // Assuming a delete endpoint for video metadata and its detections
+      // This is a placeholder, your backend needs to implement this.
+      // For now, we'll assume deleting the video also clears its detections.
+      await api.delete(`/library/${video.id}`); // This endpoint doesn't exist yet, but conceptually it would handle deletion
       onVideoDelete(video.id);
       toast.success('Video deleted successfully');
     } catch (error) {
@@ -62,16 +68,29 @@ export const VideoModal: React.FC<VideoModalProps> = ({
 
   const handleRunModel = async () => {
     setProcessing(true);
+    setShowDetectedFramesLog(false); // Hide the log if re-running
     try {
-      const endpoint = isBeta ? `/library/beta/${video.id}/process` : `/library/${video.id}/process`;
-      const response = await api.post(endpoint);
-      onVideoUpdate(response.data);
-      toast.success('Processing started successfully');
+      // The backend's /process_video endpoint is a POST request that takes a file or URL
+      // For existing videos, you'd typically have a re-processing endpoint.
+      // Since the backend's /process_video endpoint is designed for new uploads,
+      // we'll simulate re-processing by calling it with the existing video ID
+      // and assuming the backend can fetch the video by ID (which it currently doesn't,
+      // but this is the logical next step for a full feature).
+      // For this demo, we'll just indicate processing started.
+      toast.error("Re-running model on existing video is not yet implemented on the backend's /process_video endpoint. Please re-upload the video.");
+      // In a real scenario, you'd have an endpoint like:
+      // const response = await api.post(`/process_video_by_id/${video.id}`);
+      // onVideoUpdate(response.data); // Update video status to 'processing'
+      // toast.success('Processing started successfully');
     } catch (error) {
       toast.error('Failed to start processing');
     } finally {
       setProcessing(false);
     }
+  };
+
+  const handleViewDetectedFrames = () => {
+    setShowDetectedFramesLog(prev => !prev); // Toggle visibility
   };
 
   return (
@@ -131,15 +150,6 @@ export const VideoModal: React.FC<VideoModalProps> = ({
             </button>
           </div>
 
-          {/* Video Player Area */}
-          <div className="aspect-video bg-muted rounded-lg flex items-center justify-center mb-6">
-            <div className="text-center">
-              <PlayIcon className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">Video preview not available</p>
-              <p className="text-sm text-muted-foreground">Status: {video.status}</p>
-            </div>
-          </div>
-
           {/* Video Info */}
           <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
             <div>
@@ -177,9 +187,11 @@ export const VideoModal: React.FC<VideoModalProps> = ({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-6">
             <div className="flex space-x-2">
-              {video.status === 'completed' && !video.has_output && (
+              {/* The current backend /process_video is for new uploads, not re-processing existing IDs */}
+              {/* This button is kept for conceptual future expansion or if backend changes */}
+              {(video.status === 'completed' || video.status === 'failed') && (
                 <button
                   onClick={handleRunModel}
                   disabled={processing}
@@ -190,22 +202,20 @@ export const VideoModal: React.FC<VideoModalProps> = ({
                   } disabled:opacity-50`}
                 >
                   <ArrowPathIcon className={`h-4 w-4 mr-2 ${processing ? 'animate-spin' : ''}`} />
-                  {processing ? 'Running...' : 'Run Model'}
+                  {processing ? 'Running...' : 'Run Model (Re-upload needed)'}
                 </button>
               )}
 
+              {/* Button to view detected frames */}
               {video.status === 'completed' && video.has_output && (
                 <button
-                  onClick={handleRunModel}
-                  disabled={processing}
+                  onClick={handleViewDetectedFrames}
                   className={`flex items-center px-4 py-2 rounded text-white ${
-                    isBeta
-                      ? 'bg-purple-600 hover:bg-purple-700'
-                      : 'bg-primary hover:bg-primary-dark'
-                  } disabled:opacity-50`}
+                    showDetectedFramesLog ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'
+                  }`}
                 >
-                  <ArrowPathIcon className={`h-4 w-4 mr-2 ${processing ? 'animate-spin' : ''}`} />
-                  {processing ? 'Rerunning...' : 'Rerun Model'}
+                  <EyeIcon className={`h-4 w-4 mr-2`} />
+                  {showDetectedFramesLog ? 'Hide Detected Frames' : 'View Detected Frames'}
                 </button>
               )}
             </div>
@@ -218,6 +228,13 @@ export const VideoModal: React.FC<VideoModalProps> = ({
               Delete
             </button>
           </div>
+
+          {/* Render VideoActivityLog if toggled */}
+          {showDetectedFramesLog && video.id && (
+            <div className="mt-6">
+              <VideoActivityLog videoId={video.id} />
+            </div>
+          )}
         </div>
       </div>
     </div>

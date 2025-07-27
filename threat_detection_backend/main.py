@@ -21,6 +21,7 @@ import motor.motor_asyncio
 from pymongo.errors import ConnectionFailure
 
 # Import the new modules
+# Assuming these are in a 'models' directory relative to main.py
 from models.chunker import chunk_file, get_file_md5
 from models.collector import reassemble_file
 
@@ -931,6 +932,55 @@ async def get_video_detections_by_id(video_id: str):
         logger.error(f"Error retrieving video detections for video ID {video_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve video detections: {e}")
 
+# NEW ENDPOINT: /library to list videos (placeholder implementation)
+@app.get("/library")
+async def get_library_videos():
+    """
+    Placeholder endpoint to retrieve a list of processed videos.
+    In a real application, this would query your MongoDB for video metadata.
+    For now, it returns a dummy list or an empty list.
+    """
+    try:
+        # This is a placeholder. You'll need to implement actual logic
+        # to fetch video metadata from your MongoDB.
+        # For example, you might have a 'videos' collection that stores
+        # summary info about each processed video.
+        
+        # Example: Fetching video IDs from video_detections collection and
+        # constructing dummy Video objects. This is not efficient for a large library.
+        distinct_video_ids_cursor = connection_manager.db_manager.video_detections_collection.distinct("video_id")
+        distinct_video_ids = await distinct_video_ids_cursor
+        
+        videos_list = []
+        for video_id in distinct_video_ids:
+            # For each video_id, fetch one detection to get camera_name and timestamp
+            # This is a simplified approach. A dedicated 'videos' collection is better.
+            first_detection = await connection_manager.db_manager.video_detections_collection.find_one(
+                {"video_id": video_id},
+                sort=[("detection_timestamp", 1)]
+            )
+            
+            if first_detection:
+                # Count total detections for this video
+                total_detections_count = await connection_manager.db_manager.video_detections_collection.count_documents({"video_id": video_id})
+                
+                videos_list.append({
+                    "id": video_id,
+                    "filename": first_detection.get("camera_name", f"Video {video_id[:8]}"),
+                    "original_filename": first_detection.get("camera_name", f"Video {video_id[:8]}"),
+                    "upload_date": first_detection["video_processing_start_time"].isoformat() if "video_processing_start_time" in first_detection else datetime.now().isoformat(),
+                    "status": "completed", # Assuming if it has detections, it's completed
+                    "has_output": total_detections_count > 0,
+                    "file_size": 0, # Cannot determine file size from detections, set to 0 or fetch from another source
+                    "duration": 0 # Cannot determine duration from detections, set to 0
+                })
+        
+        return videos_list
+    except Exception as e:
+        logger.error(f"Error retrieving video library from MongoDB: {e}")
+        # Return an empty list or raise HTTPException based on desired behavior
+        return []
+
 
 @app.get("/demo", response_class=HTMLResponse)
 async def demo_page():
@@ -1772,3 +1822,4 @@ if __name__ == "__main__":
         reload=False,
         log_level="info"
     )
+

@@ -15,17 +15,27 @@ const Library: React.FC = () => {
 
   const fetchVideos = async () => {
     try {
-      const response = await api.get('/library');
+      // Assuming /library endpoint will eventually return video metadata
+      // including whether it has processed output (has_output).
+      // For now, it's a placeholder.
+      // The backend's /process_video doesn't add to a /library list directly.
+      // This /library endpoint would need to be implemented on the backend.
+      // For this demo, we'll simulate a fetch.
+      // A more robust solution would involve a backend endpoint that lists all processed videos.
+      // For now, this will fetch a dummy list or rely on the backend's /library if it exists.
+      const response = await api.get('/library'); // This endpoint needs to be implemented on backend
       setVideos(response.data);
     } catch (error) {
-      toast.error('Failed to load videos');
+      toast.error('Failed to load videos from library');
       console.error('Error fetching videos:', error);
+      setVideos([]); // Ensure videos array is empty on error
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // Initial fetch of videos when component mounts
     fetchVideos();
   }, []);
 
@@ -34,9 +44,12 @@ const Library: React.FC = () => {
     setModalOpen(true);
   };
 
-  const handleUploadSuccess = () => {
+  // The onUploadSuccess now receives the video_id from the backend
+  const handleUploadSuccess = (videoId: string) => {
+    // Instead of directly adding, we'll refetch to get the full video object
+    // with its updated status (e.g., 'processing' or 'completed' and has_output)
     fetchVideos();
-    toast.success('Video uploaded successfully!');
+    toast.success(`Video uploaded and processing initiated for ID: ${videoId}!`);
   };
 
   const handleVideoUpdate = (updatedVideo: Video) => {
@@ -73,6 +86,7 @@ const Library: React.FC = () => {
         </div>
       </div>
 
+      {/* Pass the updated handleUploadSuccess */}
       <VideoUpload onUploadSuccess={handleUploadSuccess} />
 
       {videos.length === 0 ? (

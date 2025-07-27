@@ -2,20 +2,23 @@ import React, { useState } from 'react';
 import { CloudArrowUpIcon } from '@heroicons/react/24/outline';
 import { api } from '../api/client';
 import toast from 'react-hot-toast';
+import { VideoProcessResponse } from '@/types/detection'; // Import the response type
 
 interface VideoUploadProps {
-  onUploadSuccess: () => void;
+  onUploadSuccess: (videoId: string) => void; // Now passes videoId
   isBeta?: boolean;
-  uploadEndpoint?: string;
+  // uploadEndpoint?: string; // This prop is no longer needed as we're hardcoding /process_video
 }
 
 export const VideoUpload: React.FC<VideoUploadProps> = ({
   onUploadSuccess,
   isBeta = false,
-  uploadEndpoint = '/library/upload'
+  // uploadEndpoint = '/library/upload' // Default is now hardcoded to /process_video
 }) => {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState(0); // 0-100, for visual progress
+  const uploadEndpoint = '/process_video'; // Hardcode the endpoint
 
   const handleFileSelect = async (file: File) => {
     if (!file.type.startsWith('video/')) {
@@ -29,23 +32,38 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({
     }
 
     setUploading(true);
+    setProcessingProgress(0); // Reset progress
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('video_file', file); // Backend expects 'video_file'
+    formData.append('camera_id', `uploaded_video_${Date.now()}`); // Unique ID for this upload
+    formData.append('camera_name', file.name); // Use filename as camera name
 
     try {
-      await api.post(uploadEndpoint, formData, {
+      // Simulate upload progress (optional, as backend processes after full upload)
+      // For a true progress bar, you'd need a backend that streams upload progress.
+      // Here, we'll just show an indeterminate processing state after upload.
+      
+      const response = await api.post<VideoProcessResponse>(uploadEndpoint, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        // You would add onUploadProgress here if your axios instance was configured for it
+        // onUploadProgress: (progressEvent) => {
+        //   const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        //   setProcessingProgress(percentCompleted);
+        // },
       });
 
-      onUploadSuccess();
-      toast.success(`Video uploaded successfully${isBeta ? ' to beta library' : ''}!`);
+      // Once the response is received, processing is complete.
+      setProcessingProgress(100); 
+      onUploadSuccess(response.data.video_id); // Pass the video_id from the response
+      toast.success(`Video uploaded and processing started successfully!`);
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload video');
+      toast.error('Failed to upload and process video');
     } finally {
       setUploading(false);
+      setProcessingProgress(0); // Reset for next upload
     }
   };
 
@@ -119,10 +137,12 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({
         {uploading && (
           <div className="mt-4">
             <div className="w-full bg-muted rounded-full h-2">
+              {/* Indeterminate progress bar for processing */}
               <div className={`h-2 rounded-full ${
                 isBeta ? 'bg-purple-600' : 'bg-primary'
               } animate-pulse`} style={{ width: '100%' }}></div>
             </div>
+            <p className="text-sm text-muted-foreground mt-2">Processing video...</p>
           </div>
         )}
       </div>
