@@ -11,11 +11,11 @@ import time
 import numpy as np
 import face_recognition
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 import logging
 import base64
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, status
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, status, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -26,7 +26,7 @@ from shared.database import (
 )
 from shared.config import (
     LOG_LEVEL, RECOGNITION_HOST, RECOGNITION_PORT,
-    ENTRY_CAMERA_INDEX, EXIT_CAMERA_INDEX, CAMERA_FALLBACK_ENABLED,
+    # Removed camera indices as live streams are gone
     EMBEDDING_THRESHOLD, FACE_DETECTION_SCALE, COOLDOWN_PERIOD_SECONDS,
     CORS_ORIGINS, CORS_CREDENTIALS,
     UNKNOWN_COLOR, ROLE_COLORS # Assuming these are defined in config
@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Campus Face Recognition API",
-    description="API for real-time face recognition and access control",
+    description="API for real-time face recognition and access control for kiosk system",
     version="1.0.0"
 )
 
@@ -52,14 +52,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global variables for known faces and webcams
+# Global variables for known faces
 known_face_encodings = []
 known_face_names = []
 known_user_ids = []
 known_user_roles = []
 
-entry_webcam: Optional[cv2.VideoCapture] = None
-exit_webcam: Optional[cv2.VideoCapture] = None
+# No longer need webcam objects
+# entry_webcam: Optional[cv2.VideoCapture] = None
+# exit_webcam: Optional[cv2.VideoCapture] = None
 
 last_entry_detection_time: Dict[str, float] = {}
 last_exit_detection_time: Dict[str, float] = {}
@@ -98,46 +99,132 @@ def load_known_faces() -> bool:
     logger.info(f"Loaded {len(known_face_encodings)} known faces from the database.")
     return True
 
-def initialize_webcams():
-    """Initializes entry and exit webcams."""
-    global entry_webcam, exit_webcam
+# Removed initialize_webcams as webcams are no longer used for streaming
 
-    # Entry Webcam
-    logger.info(f"Attempting to initialize entry webcam (camera {ENTRY_CAMERA_INDEX}).")
-    entry_webcam = cv2.VideoCapture(ENTRY_CAMERA_INDEX)
-    if entry_webcam.isOpened():
-        logger.info(f"Entry webcam (camera {ENTRY_CAMERA_INDEX}) initialized successfully.")
-    else:
-        logger.error(f"Could not initialize entry webcam (camera {ENTRY_CAMERA_INDEX}). Check connection or index.")
-        entry_webcam = None
+def process_static_image_recognition(
+    base64_image: str, 
+    detection_type: str, 
+    last_detection_times: Dict[str, float]
+) -> Dict[str, Any]:
+    """
+    Processes a single base64 encoded image for face recognition,
+    updates user status, and logs events.
+    Args:
+        base64_image: The base64 encoded image string.
+        detection_type: 'entry' or 'exit'
+        last_detection_times: A dictionary to store the last detection time for each user.
+    Returns:
+        A dictionary containing recognition results.
+    """
+    try:
+        # Decode the base64 image
+        img_bytes = base64.b64decode(base64_image)
+        np_arr = np.frombuffer(img_bytes, np.uint8)
+        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
-    # Exit Webcam
-    logger.info(f"Attempting to initialize exit webcam (camera {EXIT_CAMERA_INDEX}).")
-    exit_webcam = cv2.VideoCapture(EXIT_CAMERA_INDEX)
-    if exit_webcam.isOpened():
-        logger.info(f"Exit webcam (camera {EXIT_CAMERA_INDEX}) initialized successfully.")
-    else:
-        logger.warning(f"Could not initialize exit webcam (camera {EXIT_CAMERA_INDEX}). Check connection.")
-        if CAMERA_FALLBACK_ENABLED and ENTRY_CAMERA_INDEX != EXIT_CAMERA_INDEX: # Prevent re-initializing same camera
-            logger.info(f"Attempting to use entry camera index {ENTRY_CAMERA_INDEX} as fallback for exit webcam.")
-            exit_webcam = cv2.VideoCapture(ENTRY_CAMERA_INDEX) # Fallback to entry camera
-            if exit_webcam.isOpened():
-                logger.info(f"Exit webcam initialized successfully using camera {ENTRY_CAMERA_INDEX} (fallback).")
+        if frame is None:
+            logger.error("Failed to decode image from base64 string.")
+            return {"status": "error", "message": "Invalid image data provided."}
+
+        small_frame = cv2.resize(frame, (0, 0), fx=FACE_DETECTION_SCALE, fy=FACE_DETECTION_SCALE)
+        rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
+
+        face_locations = face_recognition.face_locations(rgb_small_frame)
+        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+
+        if not face_encodings:
+            return {"status": "no_face_detected", "message": "No face detected in the image."}
+
+        # Assuming only one face for kiosk system, or just processing the first one found
+        face_encoding = face_encodings[0]
+        
+        name = "Unknown"
+        user_id = None
+        role = None
+        confidence = 0.0
+
+        if known_face_encodings:
+            face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
+            matches = face_distances <= EMBEDDING_THRESHOLD
+
+            if True in matches:
+                first_match_index = np.where(matches)[0][0]
+                name = known_face_names[first_match_index]
+                user_id = known_user_ids[first_match_index]
+                role = known_user_roles[first_match_index]
+                confidence = 1 - face_distances[first_match_index] # Convert distance to confidence
+
+                current_time = time.time()
+                if user_id and (user_id not in last_detection_times or
+                                current_time - last_detection_times[user_id] > COOLDOWN_PERIOD_SECONDS):
+                    
+                    logger.info(f"User {name} (ID: {user_id}, Role: {role}) detected for {detection_type}. Confidence: {confidence:.2f}")
+                    
+                    # Update user status based on detection_type
+                    is_on_site = True if detection_type == 'entry' else False
+                    if update_user_status(user_id, is_on_site):
+                        log_access_event(user_id, name, detection_type, 'kiosk', confidence)
+                        last_detection_times[user_id] = current_time
+                        return {
+                            "status": "success",
+                            "message": f"User {name} recognized and {detection_type} logged.",
+                            "user_id": user_id,
+                            "name": name,
+                            "role": role,
+                            "confidence": f"{confidence:.2f}",
+                            "action": detection_type,
+                            "on_site_status_updated": True
+                        }
+                    else:
+                        logger.error(f"Failed to update status for user {user_id}")
+                        return {
+                            "status": "error",
+                            "message": f"Failed to update status for user {name} (ID: {user_id}).",
+                            "user_id": user_id,
+                            "name": name,
+                            "role": role,
+                            "confidence": f"{confidence:.2f}",
+                            "action": detection_type,
+                            "on_site_status_updated": False
+                        }
+                else:
+                    # User recognized but within cooldown period
+                    return {
+                        "status": "cooldown",
+                        "message": f"User {name} recognized, but within cooldown period for {detection_type}.",
+                        "user_id": user_id,
+                        "name": name,
+                        "role": role,
+                        "confidence": f"{confidence:.2f}",
+                        "action": detection_type,
+                        "on_site_status_updated": False
+                    }
             else:
-                logger.critical(f"Failed to initialize exit webcam even with fallback. No exit webcam available.")
-                exit_webcam = None # Still no exit webcam
-        elif CAMERA_FALLBACK_ENABLED and ENTRY_CAMERA_INDEX == EXIT_CAMERA_INDEX:
-            logger.info("Entry and Exit camera indices are the same, no fallback needed/possible.")
-            # If they are the same, and entry is open, exit will also be handled by the same device.
-            # If entry failed, exit will also fail. No further action needed here.
+                # No match found within threshold
+                return {
+                    "status": "unknown_face",
+                    "message": "Face detected, but not recognized as a known user.",
+                    "confidence": "N/A",
+                    "action": detection_type
+                }
         else:
-            logger.critical(f"Camera fallback is disabled, and exit webcam is not available.")
-            exit_webcam = None # No exit webcam
+            # No known faces loaded in the system
+            return {
+                "status": "no_known_faces",
+                "message": "No known faces are loaded in the system for recognition.",
+                "confidence": "N/A",
+                "action": detection_type
+            }
+
+    except Exception as e:
+        logger.error(f"Error in process_static_image_recognition for {detection_type}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error during recognition: {str(e)}")
+
 
 # FastAPI Lifecycle Events
 @app.on_event("startup")
 async def startup_event():
-    """Initializes database, loads known faces, and sets up webcams on startup."""
+    """Initializes database and loads known faces on startup."""
     logger.info("Recognition API starting up...")
     if not initialize_database():
         logger.critical("Failed to initialize database. Exiting.")
@@ -147,19 +234,14 @@ async def startup_event():
         logger.critical("Failed to load known faces from database. Exiting.")
         raise Exception("Known faces loading failed")
     
-    initialize_webcams()
+    # Removed webcam initialization
     logger.info("Recognition API startup complete.")
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Releases webcam resources on shutdown."""
+    """No webcam resources to release on shutdown in kiosk mode."""
     logger.info("Recognition API shutting down...")
-    if entry_webcam and entry_webcam.isOpened():
-        entry_webcam.release()
-        logger.info("Entry webcam released.")
-    if exit_webcam and exit_webcam.isOpened():
-        exit_webcam.release()
-        logger.info("Exit webcam released.")
+    # No webcams to release
     logger.info("Recognition API shutdown complete.")
 
 # API Endpoints
@@ -167,17 +249,19 @@ async def shutdown_event():
 async def root():
     """Root endpoint for the Recognition API."""
     return {
-        "message": "Campus Face Recognition API",
+        "message": "Campus Face Recognition API (Kiosk Mode)",
         "version": "1.0.0",
         "endpoints": {
-            "entry_stream": "/entry_stream",
-            "exit_stream": "/exit_stream",
+            "enter_site_recognition": "/enter_site_recognition (POST)",
+            "exit_site_recognition": "/exit_site_recognition (POST)",
             "health": "/health",
             "logs": "/logs",
-            "users": "/users/{user_id}",
+            "users_status": "/users/{user_id}/status",
+            "on_site_personnel": "/on_site_personnel",
             "reload_faces": "/reload-faces",
-            "on_site_personnel": "/on_site_personnel", # Added
-            "scanner_status": "/scanner_status" # Added
+            "manual_entry": "/users/{user_id}/manual_entry (POST)",
+            "manual_exit": "/users/{user_id}/manual_exit (POST)"
+            # Removed scanner_status as there are no 'scanners' in the old sense
         }
     }
 
@@ -210,234 +294,45 @@ async def get_on_site_personnel():
         logger.error(f"Error retrieving on-site personnel: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve on-site personnel: {str(e)}")
 
-@app.get("/scanner_status")
-async def get_scanner_status():
-    """Get the current status of the entry and exit scanners (webcams)."""
-    entry_status = "active" if entry_webcam and entry_webcam.isOpened() else "inactive"
-    exit_status = "active" if exit_webcam and exit_webcam.isOpened() else "inactive"
-    
-    logger.info(f"Scanner status requested: Entry={entry_status}, Exit={exit_status}")
-    return {
-        "entry_scanner": {"status": entry_status, "camera_index": ENTRY_CAMERA_INDEX},
-        "exit_scanner": {"status": exit_status, "camera_index": EXIT_CAMERA_INDEX},
-        "message": "Scanner status retrieved successfully."
-    }
+# Removed get_scanner_status as it's no longer relevant for kiosk system
 
-
-@app.websocket("/entry_stream")
-async def entry_websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    logger.info("Entry webcam WebSocket connected.")
-    if not entry_webcam or not entry_webcam.isOpened():
-        logger.error("Entry webcam not available for streaming.")
-        await websocket.close(code=status.WS_1011_INTERNAL_ERROR, reason="Entry webcam not initialized.")
-        return
-
+@app.post("/enter_site_recognition")
+async def enter_site_recognition_endpoint(request: Request):
+    """
+    Endpoint for entering a site via face recognition.
+    Expects a JSON body with 'base64_image'.
+    """
     try:
-        while True:
-            ret, frame = entry_webcam.read()
-            if not ret:
-                logger.error("Failed to read frame from entry webcam.")
-                # Attempt to re-initialize camera if it failed to read
-                initialize_webcams()
-                if not entry_webcam or not entry_webcam.isOpened():
-                    logger.critical("Entry webcam permanently unavailable. Closing stream.")
-                    break
-                continue # Try reading again after re-init
-
-            # Process frame for face recognition
-            small_frame = cv2.resize(frame, (0, 0), fx=FACE_DETECTION_SCALE, fy=FACE_DETECTION_SCALE)
-            rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
-
-            face_locations = face_recognition.face_locations(rgb_small_frame)
-            face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-
-            current_faces_info = []
-
-            for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
-                # Scale back up face locations
-                top = int(top / FACE_DETECTION_SCALE)
-                right = int(right / FACE_DETECTION_SCALE)
-                bottom = int(bottom / FACE_DETECTION_SCALE)
-                left = int(left / FACE_DETECTION_SCALE)
-
-                name = "Unknown"
-                user_id = None
-                role = None
-                confidence = 0.0
-                box_color = UNKNOWN_COLOR # Default to unknown color
-
-                if known_face_encodings:
-                    face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-                    matches = face_distances <= EMBEDDING_THRESHOLD
-
-                    if True in matches:
-                        first_match_index = np.where(matches)[0][0]
-                        name = known_face_names[first_match_index]
-                        user_id = known_user_ids[first_match_index]
-                        role = known_user_roles[first_match_index]
-                        confidence = 1 - face_distances[first_match_index] # Convert distance to confidence
-
-                        # Set color based on role if known
-                        box_color = ROLE_COLORS.get(role, UNKNOWN_COLOR)
-
-
-                        current_time = time.time()
-                        if user_id and (user_id not in last_entry_detection_time or
-                                        current_time - last_entry_detection_time[user_id] > COOLDOWN_PERIOD_SECONDS):
-                            
-                            logger.info(f"User {name} (ID: {user_id}, Role: {role}) detected for entry. Confidence: {confidence:.2f}")
-                            if update_user_status(user_id, True): # Set on_site to True
-                                log_access_event(user_id, name, 'entry', 'scanner', confidence)
-                                last_entry_detection_time[user_id] = current_time
-                            else:
-                                logger.error(f"Failed to update status for user {user_id}")
-                                
-
-                current_faces_info.append({
-                    "name": name,
-                    "confidence": f"{confidence:.2f}",
-                    "location": [top, right, bottom, left],
-                    "action": "entry"
-                })
-                # Draw box and label
-                cv2.rectangle(frame, (left, top), (right, bottom), box_color, 2)
-                cv2.rectangle(frame, (left, bottom - 35), (right, bottom), box_color, cv2.FILLED)
-                font = cv2.FONT_HERSHEY_DUPLEX
-                label = f"{name} ({confidence:.2f})" if name != "Unknown" else "Unknown"
-                cv2.putText(frame, label, (left + 6, bottom - 6), font, 0.7, (255, 255, 255), 1)
-
-            # Encode frame to JPEG
-            ret, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
-            if not ret:
-                logger.error("Failed to encode frame to JPEG for entry stream.")
-                continue
-            
-            # Send image data and detection info
-            await websocket.send_json({
-                "image": base64.b64encode(buffer).decode('utf-8'),
-                "detections": current_faces_info
-            })
-            await websocket.send_text("FRAME_END") # Signal end of frame data
-
-            # Small delay to control frame rate if necessary, derived from STREAM_FPS
-            # This aims for roughly STREAM_FPS frames per second.
-            # However, face recognition is CPU intensive, so actual FPS will be lower.
-            # time.sleep(1.0 / STREAM_FPS) 
-
-    except WebSocketDisconnect:
-        logger.info("Entry webcam WebSocket disconnected.")
+        data = await request.json()
+        base64_image = data.get("base64_image")
+        if not base64_image:
+            raise HTTPException(status_code=400, detail="No base64_image provided in the request body.")
+        
+        return process_static_image_recognition(base64_image, 'entry', last_entry_detection_time)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON format.")
     except Exception as e:
-        logger.error(f"Error in entry webcam WebSocket: {e}", exc_info=True)
-    finally:
-        if websocket.client_state == status.WS_CONNECTED:
-            await websocket.close()
+        logger.error(f"Error in /enter_site_recognition endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error processing entry recognition: {str(e)}")
 
-
-@app.websocket("/exit_stream")
-async def exit_websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    logger.info("Exit webcam WebSocket connected.")
-    if not exit_webcam or not exit_webcam.isOpened():
-        logger.error("Exit webcam not available for streaming.")
-        await websocket.close(code=status.WS_1011_INTERNAL_ERROR, reason="Exit webcam not initialized.")
-        return
-
+@app.post("/exit_site_recognition")
+async def exit_site_recognition_endpoint(request: Request):
+    """
+    Endpoint for exiting a site via face recognition.
+    Expects a JSON body with 'base64_image'.
+    """
     try:
-        while True:
-            ret, frame = exit_webcam.read()
-            if not ret:
-                logger.error("Failed to read frame from exit webcam.")
-                # Attempt to re-initialize camera if it failed to read
-                initialize_webcams()
-                if not exit_webcam or not exit_webcam.isOpened():
-                    logger.critical("Exit webcam permanently unavailable. Closing stream.")
-                    break
-                continue # Try reading again after re-init
+        data = await request.json()
+        base64_image = data.get("base64_image")
+        if not base64_image:
+            raise HTTPException(status_code=400, detail="No base64_image provided in the request body.")
 
-            # Process frame for face recognition
-            small_frame = cv2.resize(frame, (0, 0), fx=FACE_DETECTION_SCALE, fy=FACE_DETECTION_SCALE)
-            rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
-
-            face_locations = face_recognition.face_locations(rgb_small_frame)
-            face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-
-            current_faces_info = []
-
-            for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
-                # Scale back up face locations
-                top = int(top / FACE_DETECTION_SCALE)
-                right = int(right / FACE_DETECTION_SCALE)
-                bottom = int(bottom / FACE_DETECTION_SCALE)
-                left = int(left / FACE_DETECTION_SCALE)
-
-                name = "Unknown"
-                user_id = None
-                role = None
-                confidence = 0.0
-                box_color = UNKNOWN_COLOR # Default to unknown color
-
-                if known_face_encodings:
-                    face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-                    matches = face_distances <= EMBEDDING_THRESHOLD
-
-                    if True in matches:
-                        first_match_index = np.where(matches)[0][0]
-                        name = known_face_names[first_match_index]
-                        user_id = known_user_ids[first_match_index]
-                        role = known_user_roles[first_match_index]
-                        confidence = 1 - face_distances[first_match_index] # Convert distance to confidence
-
-                        # Set color based on role if known
-                        box_color = ROLE_COLORS.get(role, UNKNOWN_COLOR)
-
-                        current_time = time.time()
-                        if user_id and (user_id not in last_exit_detection_time or
-                                        current_time - last_exit_detection_time[user_id] > COOLDOWN_PERIOD_SECONDS):
-                            
-                            logger.info(f"User {name} (ID: {user_id}, Role: {role}) detected for exit. Confidence: {confidence:.2f}")
-                            if update_user_status(user_id, False): # Set on_site to False
-                                log_access_event(user_id, name, 'exit', 'scanner', confidence)
-                                last_exit_detection_time[user_id] = current_time
-                            else:
-                                logger.error(f"Failed to update status for user {user_id}")
-
-                current_faces_info.append({
-                    "name": name,
-                    "confidence": f"{confidence:.2f}",
-                    "location": [top, right, bottom, left],
-                    "action": "exit"
-                })
-                # Draw box and label
-                cv2.rectangle(frame, (left, top), (right, bottom), box_color, 2)
-                cv2.rectangle(frame, (left, bottom - 35), (right, bottom), box_color, cv2.FILLED)
-                font = cv2.FONT_HERSHEY_DUPLEX
-                label = f"{name} ({confidence:.2f})" if name != "Unknown" else "Unknown"
-                cv2.putText(frame, label, (left + 6, bottom - 6), font, 0.7, (255, 255, 255), 1)
-
-            # Encode frame to JPEG
-            ret, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
-            if not ret:
-                logger.error("Failed to encode frame to JPEG for exit stream.")
-                continue
-            
-            # Send image data and detection info
-            await websocket.send_json({
-                "image": base64.b64encode(buffer).decode('utf-8'),
-                "detections": current_faces_info
-            })
-            await websocket.send_text("FRAME_END") # Signal end of frame data
-
-            # Small delay to control frame rate if necessary
-            # time.sleep(1.0 / STREAM_FPS)
-
-    except WebSocketDisconnect:
-        logger.info("Exit webcam WebSocket disconnected.")
+        return process_static_image_recognition(base64_image, 'exit', last_exit_detection_time)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON format.")
     except Exception as e:
-        logger.error(f"Error in exit webcam WebSocket: {e}", exc_info=True)
-    finally:
-        if websocket.client_state == status.WS_CONNECTED:
-            await websocket.close()
+        logger.error(f"Error in /exit_site_recognition endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error processing exit recognition: {str(e)}")
 
 
 @app.get("/logs")

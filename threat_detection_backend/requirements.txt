@@ -14,3 +14,4 @@ python-multipart
 websockets
 python-dotenv
 pydantic
+motor

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CloudArrowUpIcon } from '@heroicons/react/24/outline';
+import { CloudArrowUpIcon, LinkIcon, ArrowPathIcon } from '@heroicons/react/24/outline'; // Added LinkIcon
 import { api } from '../api/client';
 import toast from 'react-hot-toast';
 import { VideoProcessResponse } from '@/types/detection'; // Import the response type
@@ -7,17 +7,16 @@ import { VideoProcessResponse } from '@/types/detection'; // Import the response
 interface VideoUploadProps {
   onUploadSuccess: (videoId: string) => void; // Now passes videoId
   isBeta?: boolean;
-  // uploadEndpoint?: string; // This prop is no longer needed as we're hardcoding /process_video
 }
 
 export const VideoUpload: React.FC<VideoUploadProps> = ({
   onUploadSuccess,
   isBeta = false,
-  // uploadEndpoint = '/library/upload' // Default is now hardcoded to /process_video
 }) => {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0); // 0-100, for visual progress
+  const [youtubeUrl, setYoutubeUrl] = useState(''); // New state for YouTube URL
   const uploadEndpoint = '/process_video'; // Hardcode the endpoint
 
   const handleFileSelect = async (file: File) => {
@@ -39,31 +38,56 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({
     formData.append('camera_name', file.name); // Use filename as camera name
 
     try {
-      // Simulate upload progress (optional, as backend processes after full upload)
-      // For a true progress bar, you'd need a backend that streams upload progress.
-      // Here, we'll just show an indeterminate processing state after upload.
-      
       const response = await api.post<VideoProcessResponse>(uploadEndpoint, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        // You would add onUploadProgress here if your axios instance was configured for it
-        // onUploadProgress: (progressEvent) => {
-        //   const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-        //   setProcessingProgress(percentCompleted);
-        // },
       });
 
-      // Once the response is received, processing is complete.
       setProcessingProgress(100); 
       onUploadSuccess(response.data.video_id); // Pass the video_id from the response
       toast.success(`Video uploaded and processing started successfully!`);
+      setYoutubeUrl(''); // Clear URL input after successful file upload
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Failed to upload and process video');
     } finally {
       setUploading(false);
       setProcessingProgress(0); // Reset for next upload
+    }
+  };
+
+  const handleYoutubeUrlSubmit = async () => {
+    if (!youtubeUrl.trim()) {
+      toast.error('Please enter a YouTube URL.');
+      return;
+    }
+
+    setUploading(true);
+    setProcessingProgress(0);
+    const formData = new FormData();
+    formData.append('video_url', youtubeUrl.trim()); // Backend expects 'video_url'
+    formData.append('camera_id', `youtube_video_${Date.now()}`); // Unique ID for YouTube upload
+    formData.append('camera_name', `YouTube Video (${youtubeUrl.substring(0, 30)}...)`); // Short name for UI
+
+    try {
+      const response = await api.post<VideoProcessResponse>(uploadEndpoint, formData, {
+        headers: {
+          // No Content-Type needed for FormData when not uploading a file, Axios handles it.
+          // 'Content-Type': 'multipart/form-data', // This is implicitly handled by FormData
+        },
+      });
+
+      setProcessingProgress(100);
+      onUploadSuccess(response.data.video_id);
+      toast.success(`YouTube video processing started successfully!`);
+      setYoutubeUrl(''); // Clear URL input after successful submission
+    } catch (error) {
+      console.error('YouTube upload error:', error);
+      toast.error(`Failed to process YouTube video: ${error.response?.data?.detail || error.message}`);
+    } finally {
+      setUploading(false);
+      setProcessingProgress(0);
     }
   };
 
@@ -108,7 +132,7 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({
             Upload {isBeta ? 'Beta ' : ''}Video
           </h3>
           <p className="text-muted-foreground mt-1">
-            Drag and drop your soccer video here, or click to browse
+            Drag and drop your video file here, or click to browse
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             Supports MP4 files up to 100MB
@@ -133,6 +157,49 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({
             />
           </label>
         </div>
+
+        {/* Separator */}
+        <div className="my-6 flex items-center">
+          <div className="flex-grow border-t border-border"></div>
+          <span className="px-3 text-muted-foreground text-sm">OR</span>
+          <div className="flex-grow border-t border-border"></div>
+        </div>
+
+        {/* YouTube URL Upload Section */}
+        <div className="mt-4">
+          <h3 className="text-lg font-medium text-foreground flex items-center justify-center">
+            <LinkIcon className={`h-6 w-6 mr-2 ${isBeta ? 'text-purple-400' : 'text-primary'}`} />
+            Process from YouTube URL
+          </h3>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Paste a YouTube video link to process.
+          </p>
+          <div className="mt-4 flex flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              placeholder="e.g., https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+              value={youtubeUrl}
+              onChange={(e) => setYoutubeUrl(e.target.value)}
+              className="flex-1 border border-border rounded-md px-3 py-2 text-foreground bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+              disabled={uploading}
+            />
+            <button
+              onClick={handleYoutubeUrlSubmit}
+              disabled={uploading || !youtubeUrl.trim()}
+              className={`px-4 py-2 rounded-md text-white font-medium ${
+                isBeta
+                  ? 'bg-purple-600 hover:bg-purple-700'
+                  : 'bg-primary hover:bg-primary-dark'
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                isBeta ? 'focus:ring-purple-500' : 'focus:ring-primary'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              <ArrowPathIcon className={`h-4 w-4 mr-2 inline-block ${uploading ? 'animate-spin' : ''}`} />
+              {uploading ? 'Processing URL...' : 'Process URL'}
+            </button>
+          </div>
+        </div>
+
 
         {uploading && (
           <div className="mt-4">

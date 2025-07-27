@@ -12,6 +12,7 @@ import { api } from '../api/client';
 import toast from 'react-hot-toast';
 import { VideoFrameDetection } from '@/types/detection'; // Import the new type
 import { VideoActivityLog } from './VideoActivityLog'; // Import the new component
+import { config } from '@/config/env'; // Import config for backend URL
 
 interface VideoModalProps {
   video: Video;
@@ -39,51 +40,60 @@ export const VideoModal: React.FC<VideoModalProps> = ({
 
   const handleRename = async () => {
     try {
+      // Assuming a patch endpoint for renaming that returns the updated video object
       const response = await api.patch(`/library/${video.id}/rename`, {
         filename: newName
       });
-      onVideoUpdate(response.data);
+      onVideoUpdate(response.data); // Update the video in parent state
       setIsRenaming(false);
       toast.success('Video renamed successfully');
     } catch (error) {
       toast.error('Failed to rename video');
+      console.error('Error renaming video:', error);
     }
   };
 
   const handleDelete = async () => {
-    // Replaced window.confirm with a custom modal/dialog if needed in a real app
-    if (!confirm('Are you sure you want to delete this video?')) return;
+    // Using a simple confirm for now, replace with a custom modal for production
+    if (!confirm('Are you sure you want to delete this video and all its associated data?')) return;
 
     try {
-      // Assuming a delete endpoint for video metadata and its detections
-      // This is a placeholder, your backend needs to implement this.
-      // For now, we'll assume deleting the video also clears its detections.
-      await api.delete(`/library/${video.id}`); // This endpoint doesn't exist yet, but conceptually it would handle deletion
-      onVideoDelete(video.id);
-      toast.success('Video deleted successfully');
+      await api.delete(`/library/${video.id}`);
+      onVideoDelete(video.id); // Notify parent to remove video from list
+      toast.success('Video and all associated data deleted successfully!');
+      onClose(); // Close the modal after deletion
     } catch (error) {
-      toast.error('Failed to delete video');
+      toast.error(`Failed to delete video: ${error.response?.data?.detail || error.message}`);
+      console.error('Error deleting video:', error);
     }
   };
 
   const handleRunModel = async () => {
     setProcessing(true);
     setShowDetectedFramesLog(false); // Hide the log if re-running
+    toast('Re-processing video... This may take a while.', { icon: '⏳' });
     try {
-      // The backend's /process_video endpoint is a POST request that takes a file or URL
-      // For existing videos, you'd typically have a re-processing endpoint.
-      // Since the backend's /process_video endpoint is designed for new uploads,
-      // we'll simulate re-processing by calling it with the existing video ID
-      // and assuming the backend can fetch the video by ID (which it currently doesn't,
-      // but this is the logical next step for a full feature).
-      // For this demo, we'll just indicate processing started.
-      toast.error("Re-running model on existing video is not yet implemented on the backend's /process_video endpoint. Please re-upload the video.");
-      // In a real scenario, you'd have an endpoint like:
-      // const response = await api.post(`/process_video_by_id/${video.id}`);
+      // To re-process, we'll hit the /process_video endpoint again,
+      // but this time, we'll instruct the backend to re-process an existing video by ID.
+      // This requires a backend modification to handle re-processing by ID,
+      // or fetching the file from stored_path and re-running process_video_file.
+      // For now, we'll simulate it or use a conceptual endpoint.
+      // A more robust solution would be a dedicated /process_video/{video_id} endpoint.
+      
+      // Since our backend's /process_video endpoint currently expects a file or URL,
+      // and not a video_id for re-processing, we'll keep the toast error for now.
+      // If you implement a backend /process_video/{video_id} endpoint, uncomment and use that.
+
+      // Example of how it *would* work if backend had /process_video/{video_id}
+      // const response = await api.post(`/process_video/${video.id}`); 
       // onVideoUpdate(response.data); // Update video status to 'processing'
       // toast.success('Processing started successfully');
+      
+      toast.error("Re-running model on existing video is not yet fully implemented via a dedicated backend endpoint. Please delete and re-upload if needed.");
+
     } catch (error) {
-      toast.error('Failed to start processing');
+      toast.error('Failed to start re-processing');
+      console.error('Error re-processing video:', error);
     } finally {
       setProcessing(false);
     }
@@ -92,6 +102,9 @@ export const VideoModal: React.FC<VideoModalProps> = ({
   const handleViewDetectedFrames = () => {
     setShowDetectedFramesLog(prev => !prev); // Toggle visibility
   };
+
+  // Construct the video stream URL
+  const videoStreamUrl = video.id ? `${config.BACKEND_HTTP_URL}/videos/${video.id}/stream` : '';
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -108,7 +121,7 @@ export const VideoModal: React.FC<VideoModalProps> = ({
                     type="text"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    className="flex-1 border border-border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="flex-1 border border-border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-primary bg-input text-foreground"
                   />
                   <button
                     onClick={handleRename}
@@ -117,7 +130,10 @@ export const VideoModal: React.FC<VideoModalProps> = ({
                     Save
                   </button>
                   <button
-                    onClick={() => setIsRenaming(false)}
+                    onClick={() => {
+                      setIsRenaming(false);
+                      setNewName(video.original_filename); // Reset to original if cancelled
+                    }}
                     className="px-3 py-1 bg-muted text-foreground rounded text-sm hover:bg-muted-foreground"
                   >
                     Cancel
@@ -150,6 +166,29 @@ export const VideoModal: React.FC<VideoModalProps> = ({
             </button>
           </div>
 
+          {/* Video Player */}
+          {videoStreamUrl && video.status === 'completed' && (
+            <div className="mb-6 rounded-lg overflow-hidden border border-border bg-black">
+              <video controls className="w-full max-h-[400px] object-contain">
+                <source src={videoStreamUrl} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          )}
+          {video.status === 'processing' && (
+            <div className="mb-6 p-4 bg-blue-100 text-blue-800 rounded-md text-center">
+              <ArrowPathIcon className="h-6 w-6 animate-spin inline-block mr-2" />
+              Video is currently processing. Please wait...
+            </div>
+          )}
+          {video.status === 'failed' && (
+            <div className="mb-6 p-4 bg-red-100 text-red-800 rounded-md text-center">
+              <XMarkIcon className="h-6 w-6 inline-block mr-2" />
+              Video processing failed.
+            </div>
+          )}
+
+
           {/* Video Info */}
           <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
             <div>
@@ -178,7 +217,7 @@ export const VideoModal: React.FC<VideoModalProps> = ({
                   : 'No Output'}
               </span>
             </div>
-            {video.duration && (
+            {video.duration !== undefined && video.duration > 0 && (
               <div>
                 <span className="text-muted-foreground">Duration:</span>
                 <span className="ml-2 text-foreground">{Math.round(video.duration)}s</span>
