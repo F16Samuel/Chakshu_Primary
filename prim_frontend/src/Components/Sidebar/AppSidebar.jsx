@@ -4,10 +4,10 @@ import { Monitor, User, Shield, Users, MapPin, ChevronLeft, ChevronRight } from 
 // Define navigation items using environment variables for URLs
 const navigationItems = [
   { title: "Dashboard", url: "/dashboard", icon: Monitor, description: "Main control center", isActive: true },
-  { title: "Face ID", url: process.env.REACT_APP_FACE_ID_URL, icon: User, description: "Facial recognition system" },
-  { title: "Weapon Detect", url: process.env.REACT_APP_WEAPON_DETECT_URL, icon: Shield, description: "Weapon identification" },
-  { title: "Riot Monitor", url: process.env.REACT_APP_RIOT_MONITOR_URL, icon: Users, description: "Riot detection system" },
-  { title: "Area Guard", url: process.env.REACT_APP_AREA_GUARD_URL, icon: MapPin, description: "Restricted area monitoring" },
+  { title: "Face ID", url: process.env.VITE_APP_FACE_ID_URL, icon: User, description: "Facial recognition system" },
+  { title: "Weapon Detect", url: process.env.VITE_APP_WEAPON_DETECT_URL, icon: Shield, description: "Weapon identification" },
+  { title: "Riot Monitor", url: process.env.VITE_APP_RIOT_MONITOR_URL, icon: Users, description: "Riot detection system" },
+  { title: "Area Guard", url: process.env.VITE_APP_AREA_GUARD_URL, icon: MapPin, description: "Restricted area monitoring" },
 ];
 
 export default function Sidebar() {
