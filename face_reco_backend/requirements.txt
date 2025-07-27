@@ -1,0 +1,31 @@
+# FastAPI and Web Framework
+fastapi
+uvicorn[standard]
+
+# Face Recognition and Computer Vision
+face-recognition
+opencv-python
+numpy
+Pillow
+
+# Database
+motor
+pymongo
+gridfs
+
+# Environment and Configuration
+python-dotenv
+
+# File Handling
+python-multipart
+
+# Data Validation
+pydantic
+
+# Utilities
+asyncio-mqtt
+python-jose[cryptography]
+passlib[bcrypt]
+
+# Logging and Monitoring
+loguru

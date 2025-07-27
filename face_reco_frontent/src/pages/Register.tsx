@@ -106,8 +106,8 @@ export default function Register() {
       // Let's adjust this to send `facePhoto1` and `facePhoto2` as `face_photo_1` and `face_photo_2`.
       // If the backend `register` endpoint is updated to accept multiple face photos, this will be correct.
       // For now, I'll assume the backend will handle multiple `UploadFile` fields for face photos.
-      formDataToSend.append("face_photo_1", formData.facePhoto1[0]);
-      formDataToSend.append("face_photo_2", formData.facePhoto2[0]);
+      formDataToSend.append("face_photo", formData.facePhoto1[0]);
+      formDataToSend.append("face_photo", formData.facePhoto2[0]);
 
 
       console.log("Attempting to send registration data to FastAPI:", {
