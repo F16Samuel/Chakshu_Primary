@@ -1,4 +1,5 @@
 import { Zap, Activity } from "lucide-react";
+import {Link} from "react-router-dom"
 
 const HeroSection = () => {
   return (
@@ -19,15 +20,15 @@ const HeroSection = () => {
 
           {/* Buttons */}
           <div className="flex justify-center flex-wrap gap-6 mb-12">
-            <button className="bg-gradient-to-r from-[#36D399] to-[#00AAFF] text-[#101921] animate-float px-8 py-4 rounded-lg text-lg font-semibold hover:shadow-[0_0_12px_#36D399] transition-all duration-300">
+            <Link to="/login" className="bg-gradient-to-r from-[#36D399] to-[#00AAFF] text-[#101921] animate-float px-8 py-4 rounded-lg text-lg font-semibold hover:shadow-[0_0_12px_#36D399] transition-all duration-300">
               <Zap className="inline-block mr-2 h-5 w-5" />
               Start Monitoring
-            </button>
+            </Link>
 
-            <button className="border border-[#00AAFF] text-[#00AAFF] px-8 py-4 rounded-lg text-lg font-semibold hover:bg-[#00AAFF] hover:text-[#101921] transition-all duration-300">
+            <Link to="/Dashboard" className="border border-[#00AAFF] text-[#00AAFF] px-8 py-4 rounded-lg text-lg font-semibold hover:bg-[#00AAFF] hover:text-[#101921] transition-all duration-300">
               <Activity className="inline-block mr-2 h-5 w-5" />
               View Demo
-            </button>
+            </Link>
           </div>
 
           {/* Stats */}

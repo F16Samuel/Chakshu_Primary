@@ -76,21 +76,21 @@ export function StatsPanel({ activeCameraCount, totalThreats }: StatsPanelProps)
           <Card key={stat.label} className="bg-gradient-card p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
+                <p className="text-sm text-white">{stat.label}</p>
                 <p className={cn(
                   "text-2xl font-bold",
-                  `text-${stat.color}` // Apply color from stat.color
+                  `text-[#A1A4A6]` // Apply color from stat.color
                 )}>
                   {stat.value}
                 </p>
               </div>
               <div className={cn(
                 "p-2 rounded-lg",
-                `bg-${stat.color}/10` // Apply background color from stat.color
+                `bg-[#101921]` // Apply background color from stat.color
               )}>
                 <IconComponent className={cn(
                   "h-5 w-5",
-                  `text-${stat.color}` // Apply text color from stat.color
+                  `text-[white]` // Apply text color from stat.color
                 )} />
               </div>
             </div>

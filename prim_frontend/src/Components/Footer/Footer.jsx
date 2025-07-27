@@ -8,8 +8,8 @@ const Footer = () =>{
                 Chakshu - The Eye That Thinks Before You Blink
             </p>
             <div className="flex justify-center space-x-8">
-                <Link to='https://github.com/Shauviq' className="text-[#36D399] hover:text-[#00AAFF] transition-colors">GitHub</Link>
-                <Link to='/' className="text-[#36D399] hover:text-[#00AAFF] transition-colors">View Demo</Link>
+                <Link to='https://github.com/F16Samuel/Chakshu_Primary' className="text-[#36D399] hover:text-[#00AAFF] transition-colors">GitHub</Link>
+                <Link to='/dashboard' className="text-[#36D399] hover:text-[#00AAFF] transition-colors">View Demo</Link>
                 <Link to='/' className="text-[#36D399] hover:text-[#00AAFF] transition-colors">Home</Link>
                 <Link to='/login' className="text-[#36D399] hover:text-[#00AAFF] transition-colors">Admin Login</Link>
             </div>

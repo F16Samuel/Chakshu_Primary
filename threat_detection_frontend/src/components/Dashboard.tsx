@@ -61,18 +61,18 @@ export function Dashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-[#101921] p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-primary rounded-lg shadow-glow">
+          <div className="p-2 bg-[#36D399] rounded-lg shadow-glow">
             <Shield className="h-8 w-8 text-white" />
           </div>
           <div>
             <h1 className="text-3xl font-bold text-foreground">
               Live Weapon Detection System
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-[#A1A4A6]">
               Real-time monitoring and threat detection
             </p>
           </div>
@@ -82,7 +82,7 @@ export function Dashboard() {
           <div className={`w-3 h-3 rounded-full ${
             activeCameraCount > 0 ? 'bg-safe shadow-glow' : 'bg-muted'
           } animate-pulse`} />
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-[#A1A4A6]">
             {activeCameraCount > 0 ? 'Active' : 'Standby'}
           </span>
         </div>
@@ -119,11 +119,11 @@ export function Dashboard() {
 
           {cameras.length === 0 && (
             <div className="text-center py-16">
-              <AlertTriangle className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <AlertTriangle className="h-16 w-16 text-[#A1A4A6] mx-auto mb-4 opacity-50" />
               <h3 className="text-xl font-semibold text-foreground mb-2">
                 No Camera Feeds Active
               </h3>
-              <p className="text-muted-foreground">
+              <p className="text-[#A1A4A6]">
                 Add a camera feed to start monitoring for threats
               </p>
             </div>

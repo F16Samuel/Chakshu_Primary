@@ -45,7 +45,7 @@ export function CameraSelector({ onAddCamera }: CameraSelectorProps) {
   return (
     <Card className="bg-gradient-card p-6">
       <div className="flex items-center gap-3 mb-4">
-        <Camera className="h-5 w-5 text-primary" />
+        <Camera className="h-5 w-5 text-white" />
         <h2 className="text-lg font-semibold">Add Camera Feed</h2>
       </div>
 
