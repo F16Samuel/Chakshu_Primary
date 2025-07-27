@@ -6,6 +6,7 @@ import { StatsPanel } from './StatsPanel';
 import { NotificationSystem } from './NotificationSystem';
 import { Shield, AlertTriangle } from 'lucide-react';
 import { CameraStatus, DetectionResult } from '@/types/detection';
+import Library from './Library'; // Import the Library component
 
 export function Dashboard() {
   const [cameras, setCameras] = useState<CameraStatus[]>([]);
@@ -22,26 +23,26 @@ export function Dashboard() {
     const cameraId = `camera-${Date.now()}`;
     const newCamera: CameraStatus = {
       id: cameraId,
-      deviceId: deviceId, 
+      deviceId: deviceId,
       name: `Camera ${cameras.length + 1}`,
-      status: 'disconnected', 
-      lastDetection: null, 
+      status: 'disconnected',
+      lastDetection: null,
       threatActive: false
     };
 
     setCameras(prev => [...prev, newCamera]);
-  }, [cameras]); 
+  }, [cameras]);
 
   const removeCamera = useCallback((cameraId: string) => {
     setCameras(prev => prev.filter(cam => cam.id !== cameraId));
   }, []);
 
   const updateCameraStatus = useCallback((cameraId: string, updates: Partial<CameraStatus>) => {
-    setCameras(prev => 
+    setCameras(prev =>
       prev.map(cam => {
         if (cam.id === cameraId) {
           // Create a NEW object reference for the updated camera
-          return { ...cam, ...updates }; 
+          return { ...cam, ...updates };
         }
         return cam;
       })
@@ -55,7 +56,7 @@ export function Dashboard() {
   }, []);
 
   const activeCameraCount = cameras.filter(cam => cam.status === 'connected').length;
-  const totalThreats = cameras.reduce((sum, cam) => 
+  const totalThreats = cameras.reduce((sum, cam) =>
     sum + (cam.lastDetection?.detections?.length || 0), 0
   );
 
@@ -89,9 +90,9 @@ export function Dashboard() {
 
       {/* Stats Panel */}
       <div className="mb-8">
-        <StatsPanel 
-          activeCameraCount={activeCameraCount} 
-          totalThreats={totalThreats} 
+        <StatsPanel
+          activeCameraCount={activeCameraCount}
+          totalThreats={totalThreats}
         />
       </div>
 
@@ -108,7 +109,7 @@ export function Dashboard() {
                 <CameraFeed
                   key={camera.id}
                   camera={camera}
-                  onDetection={handleDetection} 
+                  onDetection={handleDetection}
                   onRemove={() => removeCamera(camera.id)}
                   onStatusChange={(updates) => updateCameraStatus(camera.id, updates)}
                 />
@@ -127,6 +128,11 @@ export function Dashboard() {
               </p>
             </div>
           )}
+
+          {/* Library Section */}
+          <div className="mt-8">
+            <Library />
+          </div>
         </div>
 
         {/* Activity Log Sidebar */}
