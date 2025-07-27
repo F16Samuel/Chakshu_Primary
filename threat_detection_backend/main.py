@@ -6,6 +6,9 @@ from typing import List, Dict, Any, Optional, Tuple
 import json
 from datetime import datetime, timedelta
 import uuid # For generating unique video IDs
+import tempfile # For creating temporary files
+import shutil # For moving files
+import traceback # For detailed error logging
 
 import cv2
 import numpy as np
@@ -20,6 +23,9 @@ from ultralytics import YOLO
 import motor.motor_asyncio
 from pymongo.errors import ConnectionFailure
 
+# Import for downloading YouTube videos
+import yt_dlp
+
 # Import the new modules
 # Assuming these are in a 'models' directory relative to main.py
 from models.chunker import chunk_file, get_file_md5
@@ -31,6 +37,13 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# --- Configuration Constants ---
+UPLOAD_DIR = "uploaded_videos"
+# Ensure the directory exists upon startup
+os.makedirs(UPLOAD_DIR, exist_ok=True) 
+logger.info(f"Ensured UPLOAD_DIR exists at: {os.path.abspath(UPLOAD_DIR)}")
+
 
 # Pydantic models for response structure
 class Detection(BaseModel):
@@ -69,6 +82,18 @@ class VideoProcessResponse(BaseModel):
     detections_by_frame: List[VideoFrameDetection]
     message: str
 
+# Pydantic model for Video Metadata stored in MongoDB
+class VideoMetadata(BaseModel):
+    id: str # Corresponds to video_id
+    filename: str # The name of the file on disk (e.g., uuid.mp4)
+    original_filename: str # The original name provided by the user/source
+    upload_date: datetime # When it was uploaded/processed initially
+    file_size: int # Size in bytes
+    duration: float = 0.0 # Duration in seconds
+    status: str = "processing" # 'processing', 'completed', 'failed'
+    has_output: bool = False # True if detections were found and logged
+    stored_path: str # Full path to the stored video file
+
 class PerformanceStats:
     """Track performance statistics for monitoring."""
     
@@ -105,6 +130,7 @@ class DatabaseManager:
         self.db = self.client[db_name]
         self.threat_logs_collection = self.db["threat_logs"]
         self.video_detections_collection = self.db["video_detections"]
+        self.videos_metadata_collection = self.db["videos_metadata"] # New collection
         logger.info(f"DatabaseManager initialized with MongoDB: {db_name}")
 
     async def _check_connection(self):
@@ -127,6 +153,9 @@ class DatabaseManager:
             # For video_detections: index on video_id and frame_number for retrieval and sorting
             await self.video_detections_collection.create_index("video_id", background=True)
             await self.video_detections_collection.create_index([("frame_number", 1), ("detection_timestamp", 1)], background=True)
+            # For videos_metadata: index on id for quick lookup
+            await self.videos_metadata_collection.create_index("id", unique=True, background=True)
+            await self.videos_metadata_collection.create_index("upload_date", background=True)
             logger.info("MongoDB indexes ensured.")
         except Exception as e:
             logger.error(f"Error creating MongoDB indexes: {e}")
@@ -183,6 +212,61 @@ class DatabaseManager:
             # logger.debug(f"Logged video detection for video {video_id}, frame {frame_number}: {detection.label}")
         except Exception as e:
             logger.error(f"Error logging video detection to MongoDB: {e}")
+
+    async def add_video_metadata(self, metadata: VideoMetadata):
+        """Adds new video metadata to the videos_metadata collection."""
+        try:
+            # Convert datetime objects to ISO format strings for storage
+            metadata_dict = metadata.dict()
+            metadata_dict["upload_date"] = metadata.upload_date.isoformat()
+            
+            await self.videos_metadata_collection.insert_one(metadata_dict)
+            logger.info(f"Added video metadata for {metadata.original_filename} (ID: {metadata.id})")
+        except Exception as e:
+            logger.error(f"Error adding video metadata: {e}")
+
+    async def update_video_metadata(self, video_id: str, updates: Dict[str, Any]):
+        """Updates existing video metadata in the videos_metadata collection."""
+        try:
+            # Convert datetime objects in updates to ISO format strings
+            for key, value in updates.items():
+                if isinstance(value, datetime):
+                    updates[key] = value.isoformat()
+
+            await self.videos_metadata_collection.update_one(
+                {"id": video_id},
+                {"$set": updates}
+            )
+            logger.info(f"Updated video metadata for ID: {video_id} with {updates.keys()}")
+        except Exception as e:
+            logger.error(f"Error updating video metadata for ID {video_id}: {e}")
+
+    async def get_video_metadata(self, video_id: str) -> Optional[VideoMetadata]:
+        """Retrieves video metadata by ID."""
+        try:
+            data = await self.videos_metadata_collection.find_one({"id": video_id})
+            if data:
+                # Convert ISO string back to datetime for Pydantic model
+                data["upload_date"] = datetime.fromisoformat(data["upload_date"])
+                return VideoMetadata(**data)
+            return None
+        except Exception as e:
+            logger.error(f"Error retrieving video metadata for ID {video_id}: {e}")
+            return None
+
+    async def get_all_video_metadata(self) -> List[VideoMetadata]:
+        """Retrieves all video metadata."""
+        try:
+            videos = []
+            cursor = self.videos_metadata_collection.find({}).sort("upload_date", -1)
+            for doc in await cursor.to_list(length=None):
+                # Convert ISO string back to datetime for Pydantic model
+                doc["upload_date"] = datetime.fromisoformat(doc["upload_date"])
+                videos.append(VideoMetadata(**doc))
+            return videos
+        except Exception as e:
+            logger.error(f"Error retrieving all video metadata: {e}")
+            return []
 
     async def get_threat_logs(self, limit: int = 20) -> List[Dict[str, Any]]:
         """
@@ -354,10 +438,24 @@ class LiveWeaponDetectionAPI:
         self._load_models()
         logger.info("LiveWeaponDetectionAPI initialization complete")
 
-    def _load_models(self):
-        """Load both the live and video processing YOLO models."""
-        self.live_model = self._load_single_model(self.live_model_path, "live")
-        self.video_model = self._load_single_model(self.video_model_path, "video")
+    def _load_models(self, retries=3, delay=5):
+        """Load both the live and video processing YOLO models with retries."""
+        for attempt in range(retries):
+            try:
+                self.live_model = self._load_single_model(self.live_model_path, "live")
+                self.video_model = self._load_single_model(self.video_model_path, "video")
+                if self.live_model and self.video_model:
+                    logger.info("All models loaded successfully.")
+                    return
+            except Exception as e:
+                logger.warning(f"Attempt {attempt + 1} to load models failed: {e}")
+                if attempt < retries - 1:
+                    logger.info(f"Retrying in {delay} seconds...")
+                    asyncio.sleep(delay) # This will only sleep in async context, but for sync init, it blocks
+        logger.error("Failed to load models after multiple retries. Using dummy models.")
+        self.live_model = self._get_dummy_model()
+        self.video_model = self._get_dummy_model()
+
 
     def _load_single_model(self, model_path: str, model_type: str):
         """Helper to load a single YOLO model."""
@@ -593,8 +691,9 @@ class LiveWeaponDetectionAPI:
             except Exception as e:
                 logger.warning(f"Failed to update stats: {str(e)}")
 
-            # Update threat state and log to DB (only for live camera streams)
-            # This is scheduled as a task to avoid blocking the inference loop
+            # --- IMPORTANT FIX: Only update threat state for *live* camera streams ---
+            # Video processing (camera_id == "video_processor") does not use the ConnectionManager's
+            # threat state tracking, as its detections are logged to the video_detections_collection.
             if camera_id != "video_processor":
                 asyncio.create_task(connection_manager.update_threat_state_and_log(
                     camera_id, camera_name, threat_detected_in_frame, max_confidence if threat_detected_in_frame else None
@@ -637,10 +736,13 @@ class LiveWeaponDetectionAPI:
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
             logger.error(f"Error: Could not open video file {video_path}")
+            # Update video metadata status to failed
+            await connection_manager.db_manager.update_video_metadata(video_id, {"status": "failed", "message": "Could not open video file"})
             raise HTTPException(status_code=400, detail=f"Could not open video file: {video_path}")
 
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         fps_video = cap.get(cv2.CAP_PROP_FPS)
+        duration_seconds = total_frames / fps_video if fps_video > 0 else 0
         
         detections_by_frame: List[VideoFrameDetection] = []
         overall_total_detections = 0
@@ -669,7 +771,7 @@ class LiveWeaponDetectionAPI:
                         overall_total_detections += 1
                         
                         # Log to console for real-time feedback during video processing
-                        logger.info(f"Video {video_id}, Frame {frame_number}: Detected {detection.label} with {detection.confidence:.2f} confidence at {detection.bbox}")
+                        # logger.info(f"Video {video_id}, Frame {frame_number}: Detected {detection.label} with {detection.confidence:.2f} confidence at {detection.bbox}")
 
                     # Convert frame with boxes to base64 for storage
                     _, buffer = cv2.imencode('.jpg', frame_with_boxes)
@@ -698,6 +800,19 @@ class LiveWeaponDetectionAPI:
             
         processing_duration = (datetime.now() - processing_start_time).total_seconds()
         logger.info(f"Finished video processing for video_id: {video_id}. Total frames: {frame_number}, Detections: {overall_total_detections}, Duration: {processing_duration:.2f}s")
+
+        # Update video metadata in MongoDB
+        await connection_manager.db_manager.update_video_metadata(
+            video_id,
+            {
+                "status": "completed",
+                "total_frames_processed": frame_number,
+                "total_detections": overall_total_detections,
+                "processing_duration_seconds": round(processing_duration, 2),
+                "has_output": overall_total_detections > 0,
+                "duration": duration_seconds # Store actual duration
+            }
+        )
 
         return VideoProcessResponse(
             video_id=video_id,
@@ -738,7 +853,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=detection_api.allowed_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "OPTIONS", "DELETE", "PATCH"], # Added DELETE and PATCH for library operations
     allow_headers=["*"],
 )
 
@@ -835,44 +950,102 @@ async def process_video(
     API endpoint to process a whole video for weapon detection.
     Accepts either a video file upload or a video URL.
     """
+    logger.debug(f"Received /process_video request:")
+    logger.debug(f"  video_file: {video_file.filename if video_file else 'None'}")
+    logger.debug(f"  video_url: {video_url}")
+    logger.debug(f"  camera_id: {camera_id}")
+    logger.debug(f"  camera_name: {camera_name}")
+
     if not video_file and not video_url:
+        logger.error("400 Bad Request: Neither 'video_file' nor 'video_url' provided.")
         raise HTTPException(status_code=400, detail="Either 'video_file' or 'video_url' must be provided.")
 
-    temp_video_path = None
     video_id = str(uuid.uuid4()) # Generate a unique ID for this video processing task
+    stored_filename = f"{video_id}.mp4" # Standardize filename
+    stored_path = os.path.join(UPLOAD_DIR, stored_filename)
+    original_filename = ""
+    file_size = 0
 
     try:
         if video_file:
-            # Save the uploaded file temporarily
-            temp_video_path = f"temp_video_{video_id}_{video_file.filename}"
-            with open(temp_video_path, "wb") as buffer:
-                while True:
-                    chunk = await video_file.read(1024 * 1024) # Read in 1MB chunks
-                    if not chunk:
-                        break
-                    buffer.write(chunk)
-            logger.info(f"Received uploaded video: {video_file.filename}, saved to {temp_video_path}")
-            
-            # Process the temporary video file
-            response = await detection_api.process_video_file(temp_video_path, video_id, camera_id, camera_name)
+            original_filename = video_file.filename or "uploaded_video"
+            # Save the uploaded file persistently by streaming chunks
+            try:
+                with open(stored_path, "wb") as buffer:
+                    while True:
+                        chunk = await video_file.read(8192) # Read in 8KB chunks
+                        if not chunk:
+                            break
+                        buffer.write(chunk)
+                file_size = os.path.getsize(stored_path)
+                logger.info(f"Received uploaded video: {original_filename}, saved to {stored_path} (Size: {file_size} bytes)")
+            except Exception as e:
+                logger.error(f"Error saving uploaded video file {original_filename} to disk: {e}")
+                logger.error(traceback.format_exc()) # Log full traceback
+                raise HTTPException(status_code=500, detail=f"Failed to save uploaded video file: {e}")
             
         elif video_url:
-            # For simplicity, this example assumes video_url is directly readable by OpenCV.
-            # In a real-world scenario, you might need to download the video first.
-            logger.info(f"Processing video from URL: {video_url}")
-            response = await detection_api.process_video_file(video_url, video_id, camera_id, camera_name)
+            original_filename = f"YouTube Video ({video_url.split('v=')[-1][:10]}...)" if 'v=' in video_url else video_url
+            logger.info(f"Attempting to download video from URL: {video_url} to {stored_path}")
+            
+            ydl_opts = {
+                'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4', # Prefer mp4 format
+                'outtmpl': stored_path, # Directly save to the persistent path
+                'noplaylist': True,
+                'quiet': True, # Suppress console output from yt-dlp
+                'no_warnings': True, # Suppress warnings
+            }
+            
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info_dict = ydl.extract_info(video_url, download=True)
+                    # Use the actual filename from yt-dlp info if available
+                    original_filename = info_dict.get('title', original_filename) + ".mp4"
+                    logger.info(f"Downloaded video to: {stored_path}")
+                    file_size = os.path.getsize(stored_path) # Get size after download
+
+            except yt_dlp.DownloadError as e:
+                logger.error(f"Error downloading YouTube video from {video_url}: {e}")
+                logger.error(traceback.format_exc()) # Log full traceback
+                raise HTTPException(status_code=400, detail=f"Failed to download video from URL: {e}")
+            except Exception as e:
+                logger.error(f"Unexpected error during YouTube video downloading: {e}")
+                logger.error(traceback.format_exc()) # Log full traceback
+                raise HTTPException(status_code=500, detail=f"An unexpected error occurred during URL video download: {e}")
+        
+        # Create initial video metadata entry (status 'processing')
+        video_metadata = VideoMetadata(
+            id=video_id,
+            filename=stored_filename,
+            original_filename=original_filename,
+            upload_date=datetime.now(),
+            file_size=file_size,
+            status="processing",
+            has_output=False,
+            stored_path=stored_path
+        )
+        await connection_manager.db_manager.add_video_metadata(video_metadata)
+
+        # Process the stored video file
+        response = await detection_api.process_video_file(stored_path, video_id, camera_id, original_filename)
             
         return response
 
     except HTTPException as e:
+        # If an HTTPException occurs, ensure the video metadata is marked as failed
+        logger.error(f"HTTPException during video processing for {video_id}: {e.detail}")
+        logger.error(traceback.format_exc()) # Log full traceback
+        await connection_manager.db_manager.update_video_metadata(video_id, {"status": "failed", "message": str(e.detail)})
         raise e # Re-raise FastAPI HTTPExceptions
     except Exception as e:
-        logger.error(f"Error processing video {video_id}: {str(e)}")
+        logger.error(f"Unexpected error processing video {video_id}: {str(e)}")
+        logger.error(traceback.format_exc()) # Log full traceback
+        # Ensure the video metadata is marked as failed for unexpected errors
+        await connection_manager.db_manager.update_video_metadata(video_id, {"status": "failed", "message": f"Unexpected error: {str(e)}"})
         raise HTTPException(status_code=500, detail=f"Failed to process video: {str(e)}")
-    finally:
-        if temp_video_path and os.path.exists(temp_video_path):
-            os.remove(temp_video_path)
-            logger.info(f"Cleaned up temporary video file: {temp_video_path}")
+    # The finally block for temp_video_path is removed as we are now saving persistently.
+    # Cleanup for temp_file from yt-dlp is handled by tempfile context manager.
+
 
 @app.get("/logs/threats")
 async def get_threat_logs(limit: int = 20):
@@ -884,6 +1057,7 @@ async def get_threat_logs(limit: int = 20):
         return {"logs": logs}
     except Exception as e:
         logger.error(f"Error retrieving threat logs from database: {e}")
+        logger.error(traceback.format_exc()) # Log full traceback
         raise HTTPException(status_code=500, detail=f"Failed to retrieve logs: {e}")
 
 @app.get("/logs/video_detections/{video_id}", response_model=List[VideoFrameDetection])
@@ -930,56 +1104,111 @@ async def get_video_detections_by_id(video_id: str):
         raise e
     except Exception as e:
         logger.error(f"Error retrieving video detections for video ID {video_id}: {e}")
+        logger.error(traceback.format_exc()) # Log full traceback
         raise HTTPException(status_code=500, detail=f"Failed to retrieve video detections: {e}")
 
-# NEW ENDPOINT: /library to list videos (placeholder implementation)
-@app.get("/library")
+@app.get("/library", response_model=List[VideoMetadata]) # Changed response_model
 async def get_library_videos():
     """
-    Placeholder endpoint to retrieve a list of processed videos.
-    In a real application, this would query your MongoDB for video metadata.
-    For now, it returns a dummy list or an empty list.
+    Endpoint to retrieve a list of processed videos from the videos_metadata collection.
     """
     try:
-        # This is a placeholder. You'll need to implement actual logic
-        # to fetch video metadata from your MongoDB.
-        # For example, you might have a 'videos' collection that stores
-        # summary info about each processed video.
-        
-        # Example: Fetching video IDs from video_detections collection and
-        # constructing dummy Video objects. This is not efficient for a large library.
-        distinct_video_ids_cursor = connection_manager.db_manager.video_detections_collection.distinct("video_id")
-        distinct_video_ids = await distinct_video_ids_cursor
-        
-        videos_list = []
-        for video_id in distinct_video_ids:
-            # For each video_id, fetch one detection to get camera_name and timestamp
-            # This is a simplified approach. A dedicated 'videos' collection is better.
-            first_detection = await connection_manager.db_manager.video_detections_collection.find_one(
-                {"video_id": video_id},
-                sort=[("detection_timestamp", 1)]
-            )
-            
-            if first_detection:
-                # Count total detections for this video
-                total_detections_count = await connection_manager.db_manager.video_detections_collection.count_documents({"video_id": video_id})
-                
-                videos_list.append({
-                    "id": video_id,
-                    "filename": first_detection.get("camera_name", f"Video {video_id[:8]}"),
-                    "original_filename": first_detection.get("camera_name", f"Video {video_id[:8]}"),
-                    "upload_date": first_detection["video_processing_start_time"].isoformat() if "video_processing_start_time" in first_detection else datetime.now().isoformat(),
-                    "status": "completed", # Assuming if it has detections, it's completed
-                    "has_output": total_detections_count > 0,
-                    "file_size": 0, # Cannot determine file size from detections, set to 0 or fetch from another source
-                    "duration": 0 # Cannot determine duration from detections, set to 0
-                })
-        
-        return videos_list
+        videos = await connection_manager.db_manager.get_all_video_metadata()
+        return videos
     except Exception as e:
         logger.error(f"Error retrieving video library from MongoDB: {e}")
-        # Return an empty list or raise HTTPException based on desired behavior
-        return []
+        logger.error(traceback.format_exc()) # Log full traceback
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve video library: {e}")
+
+@app.get("/videos/{video_id}/stream")
+async def stream_video(video_id: str):
+    """
+    Endpoint to stream a stored video file by its ID.
+    """
+    try:
+        video_metadata = await connection_manager.db_manager.get_video_metadata(video_id)
+        if not video_metadata:
+            raise HTTPException(status_code=404, detail="Video not found.")
+        
+        video_path = video_metadata.stored_path
+        if not os.path.exists(video_path):
+            raise HTTPException(status_code=404, detail="Video file not found on server disk.")
+        
+        def iterfile():
+            with open(video_path, mode="rb") as file_like:
+                yield from file_like
+                
+        return StreamingResponse(iterfile(), media_type="video/mp4")
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error streaming video {video_id}: {e}")
+        logger.error(traceback.format_exc()) # Log full traceback
+        raise HTTPException(status_code=500, detail=f"Failed to stream video: {e}")
+
+@app.delete("/library/{video_id}")
+async def delete_video(video_id: str):
+    """
+    Endpoint to delete a video and its associated data.
+    """
+    try:
+        # 1. Get video metadata to find stored path
+        video_metadata = await connection_manager.db_manager.get_video_metadata(video_id)
+        if not video_metadata:
+            raise HTTPException(status_code=404, detail="Video not found.")
+
+        # 2. Delete the video file from disk
+        if os.path.exists(video_metadata.stored_path):
+            os.remove(video_metadata.stored_path)
+            logger.info(f"Deleted video file: {video_metadata.stored_path}")
+        else:
+            logger.warning(f"Video file not found on disk, but metadata exists: {video_metadata.stored_path}")
+
+        # 3. Delete detections from video_detections collection
+        delete_detections_result = await connection_manager.db_manager.video_detections_collection.delete_many({"video_id": video_id})
+        logger.info(f"Deleted {delete_detections_result.deleted_count} detections for video ID: {video_id}")
+
+        # 4. Delete metadata from videos_metadata collection
+        delete_metadata_result = await connection_manager.db_manager.videos_metadata_collection.delete_one({"id": video_id})
+        logger.info(f"Deleted {delete_metadata_result.deleted_count} metadata entries for video ID: {video_id}")
+
+        if delete_metadata_result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Video metadata not found for deletion.")
+
+        return {"message": f"Video {video_id} and its associated data deleted successfully."}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error deleting video {video_id}: {e}")
+        logger.error(traceback.format_exc()) # Log full traceback
+        raise HTTPException(status_code=500, detail=f"Failed to delete video: {e}")
+
+@app.patch("/library/{video_id}/rename")
+async def rename_video(video_id: str, filename: str = Form(...)):
+    """
+    Endpoint to rename a video's original_filename in the metadata.
+    """
+    try:
+        # Update original_filename in videos_metadata collection
+        update_result = await connection_manager.db_manager.videos_metadata_collection.update_one(
+            {"id": video_id},
+            {"$set": {"original_filename": filename}}
+        )
+        if update_result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Video not found for renaming.")
+        
+        updated_video = await connection_manager.db_manager.get_video_metadata(video_id)
+        if not updated_video:
+            raise HTTPException(status_code=404, detail="Video not found after rename update.")
+
+        # Return the updated video metadata
+        return updated_video
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error renaming video {video_id}: {e}")
+        logger.error(traceback.format_exc()) # Log full traceback
+        raise HTTPException(status_code=500, detail=f"Failed to rename video: {e}")
 
 
 @app.get("/demo", response_class=HTMLResponse)
@@ -1334,19 +1563,6 @@ async def demo_page():
                     };
                 }
 
-                stopDetection() {
-                    if (this.ws) {
-                        this.ws.close();
-                        this.isDetecting = false;
-                        if (this.video && this.video.srcObject) {
-                            this.video.srcObject.getTracks().forEach(track => track.stop());
-                        }
-                        this.element.remove(); // Remove the camera card from UI
-                        delete activeCameras[this.id];
-                        showPopup(`${this.name} stopped.`, 'info');
-                    }
-                }
-
                 sendFrames() {
                     if (!this.isDetecting || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
@@ -1387,7 +1603,7 @@ async def demo_page():
                     existingBboxes.forEach(bbox => bbox.remove());
 
                     if (this.currentThreatCount > 0) {
-                        this.threatDetectedUntil = Date.now() + THREAT_PERSISTENCE_MS;
+                        this.threatDetectedUntil = Date.Now() + THREAT_PERSISTENCE_MS;
                         this.updateStatus('WEAPON DETECTED!', 'text-red-600');
                         // Rate-limit popups
                         if (Date.now() - this.lastPopupTime > POPUP_COOLDOWN_MS) {
@@ -1800,6 +2016,7 @@ async def websocket_detection_endpoint(websocket: WebSocket, camera_id: str):
 async def global_exception_handler(request, exc):
     """Global exception handler for unhandled errors."""
     logger.error(f"Unhandled exception: {str(exc)}")
+    logger.error(traceback.format_exc()) # Log full traceback for global exceptions
     return JSONResponse(
         status_code=500,
         content={"detail": "An unexpected error occurred"}
@@ -1820,6 +2037,5 @@ if __name__ == "__main__":
         host=host,
         port=port,
         reload=False,
-        log_level="info"
+        log_level="debug" # Set to "debug" temporarily to see the new logs
     )
-
